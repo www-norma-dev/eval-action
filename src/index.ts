@@ -53,7 +53,7 @@ async function run(): Promise<void> {
       },
       body: JSON.stringify({
         name,
-        api_host,
+        apiHost: api_host,
         x_api_key,
         type,
         test_name,
