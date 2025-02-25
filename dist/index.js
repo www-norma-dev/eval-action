@@ -37386,16 +37386,6 @@ async function run() {
         const test_name = core.getInput("test_name");
         const scenarios = core.getInput("scenarios");
         console.log(`🔄 Sending API request to: ${api_host}`);
-        // Convert scenarios string to JSON
-        let scenariosJSON;
-        try {
-            scenariosJSON = JSON.parse(scenarios);
-            console.log('----- Scenarios JSON: ', scenariosJSON);
-        }
-        catch (error) {
-            core.setFailed(`❌ Invalid JSON in scenarios input: ${error.message}`);
-            return;
-        }
         // Make the API POST request
         const response = await (0, node_fetch_1.default)("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
             method: "POST",
@@ -37409,7 +37399,7 @@ async function run() {
                 x_api_key,
                 type,
                 test_name,
-                scenarios: scenariosJSON,
+                scenarios
             }),
         });
         if (!response.ok) {
@@ -37433,7 +37423,7 @@ This message was generated automatically by the GitHub Action.
   
 📝 **Scenarios Sent:**
 \`\`\`json
-${JSON.stringify(scenariosJSON, null, 2)}
+${JSON.stringify(scenarios, null, 2)}
 \`\`\`
 
 🔍 **API Response:**

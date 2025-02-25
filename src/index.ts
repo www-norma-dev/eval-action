@@ -43,15 +43,6 @@ async function run(): Promise<void> {
 
     console.log(`🔄 Sending API request to: ${api_host}`);
 
-    // Convert scenarios string to JSON
-    let scenariosJSON;
-    try {
-      scenariosJSON = JSON.parse(scenarios);
-      console.log('----- Scenarios JSON: ', scenariosJSON);
-    } catch (error: any) {
-      core.setFailed(`❌ Invalid JSON in scenarios input: ${error.message}`);
-      return;
-    }
 
     // Make the API POST request
     const response = await fetch("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
@@ -66,7 +57,7 @@ async function run(): Promise<void> {
         x_api_key,
         type,
         test_name,
-        scenarios: scenariosJSON,
+        scenarios
       }),
     });
 
@@ -93,7 +84,7 @@ This message was generated automatically by the GitHub Action.
   
 📝 **Scenarios Sent:**
 \`\`\`json
-${JSON.stringify(scenariosJSON, null, 2)}
+${JSON.stringify(scenarios, null, 2)}
 \`\`\`
 
 🔍 **API Response:**
