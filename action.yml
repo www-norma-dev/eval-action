@@ -4,6 +4,21 @@ inputs:
   code-to-eval:
     description: "Code to evaluate"
     required: true
+  api_host:
+    description: "API host"
+    required: true
+  x_api_key:
+    description: "API key"
+    required: true
+  type:
+    description: "Type"
+    required: true
+  test_name:
+    description: "Test name"
+    required: true
+  scenarios:
+    description: "Scenarios"
+    required: true
 runs:
   using: "node12"
   main: "dist/index.js"

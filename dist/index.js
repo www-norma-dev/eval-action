@@ -24,11 +24,47 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(require("@actions/core"));
-function run() {
+const github = __importStar(require("@actions/github"));
+async function run() {
     try {
-        // Get the input provided by the user (or the default value)
-        const code = core.getInput('code-to-eval');
-        console.log(`Hello, ${code}!`);
+        // Get the input defined in your action.yml (e.g., "who-to-greet")
+        const name = core.getInput('who-to-greet');
+        const api_host = core.getInput('api_host');
+        const x_api_key = core.getInput('x_api_key');
+        const type = core.getInput('type');
+        const test_name = core.getInput('test_name');
+        const scenarios = core.getInput('scenarios');
+        // Log to the workflow output for debugging
+        console.log(`Hello, ${name}!`);
+        console.log(`api_host, ${api_host}!`);
+        console.log(`x_api_key, ${x_api_key}!`);
+        console.log(`type, ${type}!`);
+        console.log(`test_name, ${test_name}!`);
+        console.log(`scenarios, ${scenarios}!`);
+        // Only attempt to post a comment if this event is a pull request
+        if (github.context.payload.pull_request) {
+            const prNumber = github.context.payload.pull_request.number;
+            // Use the GITHUB_TOKEN passed into the action via the environment
+            const token = process.env.GITHUB_TOKEN;
+            if (!token) {
+                core.setFailed('GITHUB_TOKEN is not set.');
+                return;
+            }
+            const octokit = github.getOctokit(token);
+            const { owner, repo } = github.context.repo;
+            // Construct the comment message
+            const comment = `Hello ${name}`;
+            await octokit.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: comment
+            });
+            core.info(`Posted comment to PR #${prNumber}: ${comment}`);
+        }
+        else {
+            core.info("This event is not a pull request; no comment was posted.");
+        }
     }
     catch (error) {
         core.setFailed(error.message);

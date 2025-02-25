@@ -5,9 +5,20 @@ async function run(): Promise<void> {
   try {
     // Get the input defined in your action.yml (e.g., "who-to-greet")
     const name: string = core.getInput('who-to-greet');
+    const api_host: string = core.getInput('api_host');
+    const x_api_key: string = core.getInput('x_api_key');
+    const type: string = core.getInput('type');
+    const test_name: string = core.getInput('test_name');
+    const scenarios: string = core.getInput('scenarios');
 
     // Log to the workflow output for debugging
     console.log(`Hello, ${name}!`);
+    console.log(`api_host, ${api_host}!`);
+    console.log(`x_api_key, ${x_api_key}!`);
+    console.log(`type, ${type}!`);
+    console.log(`test_name, ${test_name}!`);
+    console.log(`scenarios, ${scenarios}!`);
+
 
     // Only attempt to post a comment if this event is a pull request
     if (github.context.payload.pull_request) {
