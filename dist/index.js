@@ -37355,19 +37355,23 @@ const github = __importStar(__nccwpck_require__(3228));
 const node_fetch_1 = __importDefault(__nccwpck_require__(4034));
 const rest_1 = __nccwpck_require__(6145);
 const auth_app_1 = __nccwpck_require__(5434);
+const fs_1 = __importDefault(__nccwpck_require__(9896));
 async function run() {
     try {
         const appId = process.env.APP_ID;
         const privateKey = process.env.PRIVATE_KEY;
         const installationId = process.env.INSTALLATION_ID;
-        if (!appId || !privateKey || !installationId) {
-            core.setFailed("❌ GitHub App credentials (APP_ID, PRIVATE_KEY, INSTALLATION_ID) are not set.");
-            return;
-        }
+        const filePath = './GH_APP_PRIVATE_KEY.txt'; // assuming your file is named qqq.txt
+        const fileContent = fs_1.default.readFileSync(filePath, 'utf8');
+        console.log(fileContent);
+        // if (!appId || !privateKey || !installationId) {
+        //   core.setFailed("❌ GitHub App credentials (APP_ID, PRIVATE_KEY, INSTALLATION_ID) are not set.");
+        //   return;
+        // }
         // Create an authentication strategy using your GitHub App
         const auth = (0, auth_app_1.createAppAuth)({
             appId: 1158043,
-            privateKey: process.env.GH_APP_PRIVATE_KEY.replace(/\\n/g, "\n"),
+            privateKey: fileContent.replace(/\\n/g, "\n"),
             installationId: "61665610"
         });
         const { token } = await auth({ type: "installation" });

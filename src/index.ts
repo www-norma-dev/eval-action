@@ -3,7 +3,7 @@ import * as github from '@actions/github';
 import fetch from 'node-fetch';
 import { Octokit } from '@octokit/rest';
 import { createAppAuth } from '@octokit/auth-app';
-
+import fs from 'fs';
 
 async function run(): Promise<void> {
   try {
@@ -12,15 +12,20 @@ async function run(): Promise<void> {
     const privateKey = process.env.PRIVATE_KEY;
     const installationId = process.env.INSTALLATION_ID;
 
-    if (!appId || !privateKey || !installationId) {
-      core.setFailed("❌ GitHub App credentials (APP_ID, PRIVATE_KEY, INSTALLATION_ID) are not set.");
-      return;
-    }
+    const filePath = './GH_APP_PRIVATE_KEY.txt'; // assuming your file is named qqq.txt
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+
+    console.log(fileContent);
+
+    // if (!appId || !privateKey || !installationId) {
+    //   core.setFailed("❌ GitHub App credentials (APP_ID, PRIVATE_KEY, INSTALLATION_ID) are not set.");
+    //   return;
+    // }
 
     // Create an authentication strategy using your GitHub App
     const auth = createAppAuth({
       appId: 1158043,
-      privateKey: process.env.GH_APP_PRIVATE_KEY!.replace(/\\n/g, "\n"),
+      privateKey: fileContent.replace(/\\n/g, "\n"),
       installationId: "61665610"
     });
 
