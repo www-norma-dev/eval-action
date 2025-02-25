@@ -28,7 +28,7 @@ function run() {
     try {
         // Get the input provided by the user (or the default value)
         const code = core.getInput('code-to-eval');
-        console.log(`Hello, ${name}!`);
+        console.log(`Hello, ${code}!`);
     }
     catch (error) {
         core.setFailed(error.message);
