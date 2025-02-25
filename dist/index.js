@@ -27,6 +27,29 @@ const core = __importStar(require("@actions/core"));
 const github = __importStar(require("@actions/github"));
 async function run() {
     try {
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) {
+            core.setFailed("❌ GITHUB_TOKEN is not set.");
+            return;
+        }
+        const octokit = github.getOctokit(token);
+        const { owner, repo } = github.context.repo;
+        // Get the branch name from the push event
+        const branchName = github.context.ref.replace("refs/heads/", "");
+        console.log(`📌 Current branch: ${branchName}`);
+        // Fetch open PRs that have this branch as the head
+        const { data: pullRequests } = await octokit.rest.pulls.list({
+            owner,
+            repo,
+            head: `${owner}:${branchName}`,
+            state: "open",
+        });
+        if (pullRequests.length === 0) {
+            console.log("⚠️ No open PR found for this branch. Skipping comment.");
+            return;
+        }
+        const prNumber = pullRequests[0].number;
+        console.log(`✅ Found open PR #${prNumber}`);
         // Retrieve inputs from action.yml
         const name = core.getInput('who-to-greet');
         const api_host = core.getInput('api_host');
@@ -34,30 +57,7 @@ async function run() {
         const type = core.getInput('type');
         const test_name = core.getInput('test_name');
         const scenarios = core.getInput('scenarios');
-        // Debug: Log inputs
-        console.log(`Received Inputs:`);
-        console.log(`  - who-to-greet: ${name}`);
-        console.log(`  - api_host: ${api_host}`);
-        console.log(`  - x_api_key: ${x_api_key}`);
-        console.log(`  - type: ${type}`);
-        console.log(`  - test_name: ${test_name}`);
-        console.log(`  - scenarios: ${scenarios}`);
-        // Check if event is triggered by a pull request
-        console.log('================== github.context.payload =============');
-        console.log(github.context.payload);
-        if (!github.context.payload.pull_request) {
-            core.info("This event is not a pull request; no comment will be posted.");
-            return;
-        }
-        const prNumber = github.context.payload.pull_request.number;
-        const token = process.env.GITHUB_TOKEN;
-        if (!token) {
-            core.setFailed("GITHUB_TOKEN is not set.");
-            return;
-        }
-        const octokit = github.getOctokit(token);
-        const { owner, repo } = github.context.repo;
-        // Construct a well-formatted comment
+        // Construct the comment message
         const comment = `### 🚀 Automatic Evaluation Report
 **Hello ${name},**
   
@@ -85,7 +85,7 @@ ${scenarios}
             issue_number: prNumber,
             body: comment,
         });
-        core.info(`✅ Posted comment to PR #${prNumber}`);
+        core.info(`✅ Comment posted to PR #${prNumber}`);
     }
     catch (error) {
         core.setFailed(`❌ Action failed: ${error.message}`);
