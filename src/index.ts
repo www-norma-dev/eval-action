@@ -43,13 +43,14 @@ async function run(): Promise<void> {
 
     console.log(`🔄 Sending API request to: ${api_host}`);
 
+    console.log(scenarios);
+
 
     // Make the API POST request
     const response = await fetch("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-api-key": x_api_key,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         name,
@@ -61,6 +62,9 @@ async function run(): Promise<void> {
       }),
     });
 
+    console.log('---------- RESP?SE ---------');
+    console.log(response.status);
+    console.log(response);
     if (!response.ok) {
       const errorText = await response.text();
       core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
