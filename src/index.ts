@@ -12,7 +12,7 @@ async function run(): Promise<void> {
     const scenarios: string = core.getInput('scenarios');
 
     // Log to the workflow output for debugging
-    console.log(`Hello, ${name}!`);
+    console.log(`Hello :, ${name}!`);
     console.log(`api_host, ${api_host}!`);
     console.log(`x_api_key, ${x_api_key}!`);
     console.log(`type, ${type}!`);
