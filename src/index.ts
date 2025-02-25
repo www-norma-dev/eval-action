@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import fetch from 'node-fetch';
 
 async function run(): Promise<void> {
   try {
@@ -20,7 +21,7 @@ async function run(): Promise<void> {
     const { data: pullRequests } = await octokit.rest.pulls.list({
       owner,
       repo,
-      head: `${owner}:${branchName}`, // Format required by GitHub API
+      head: `${owner}:${branchName}`,
       state: "open",
     });
 
@@ -33,12 +34,51 @@ async function run(): Promise<void> {
     console.log(`✅ Found open PR #${prNumber}`);
 
     // Retrieve inputs from action.yml
-    const name: string = core.getInput('who-to-greet');
-    const api_host: string = core.getInput('api_host');
-    const x_api_key: string = core.getInput('x_api_key');
-    const type: string = core.getInput('type');
-    const test_name: string = core.getInput('test_name');
-    const scenarios: string = core.getInput('scenarios');
+    const name: string = core.getInput("who-to-greet");
+    const api_host: string = core.getInput("api_host");
+    const x_api_key: string = core.getInput("x_api_key");
+    const type: string = core.getInput("type");
+    const test_name: string = core.getInput("test_name");
+    const scenarios: string = core.getInput("scenarios");
+
+    console.log(`🔄 Sending API request to: ${api_host}`);
+
+    // Convert scenarios string to JSON
+    let scenariosJSON;
+    try {
+      scenariosJSON = JSON.parse(scenarios);
+      console.log('----- Scenarios JSON: ', scenariosJSON);
+    } catch (error: any) {
+      core.setFailed(`❌ Invalid JSON in scenarios input: ${error.message}`);
+      return;
+    }
+
+    // Make the API POST request
+    const response = await fetch("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": x_api_key,
+      },
+      body: JSON.stringify({
+        name,
+        api_host,
+        x_api_key,
+        type,
+        test_name,
+        scenarios: scenariosJSON,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
+      return;
+    }
+
+    // Parse response JSON
+    const apiResponse = await response.json();
+    console.log("✅ API Response Received:", apiResponse);
 
     // Construct the comment message
     const comment = `### 🚀 Automatic Evaluation Report
@@ -51,9 +91,14 @@ This message was generated automatically by the GitHub Action.
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
   
-📝 **Scenarios:**
+📝 **Scenarios Sent:**
 \`\`\`json
-${scenarios}
+${JSON.stringify(scenariosJSON, null, 2)}
+\`\`\`
+
+🔍 **API Response:**
+\`\`\`json
+${JSON.stringify(apiResponse, null, 2)}
 \`\`\`
 
 ---
