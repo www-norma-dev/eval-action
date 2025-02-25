@@ -1,0 +1,9 @@
+name: "Eval-action"
+description: "A minimal custom GitHub Action that evaluates code"
+inputs:
+  code-to-eval:
+    description: "Code to evaluate"
+    required: true
+runs:
+  using: "node12"
+  main: "index.js"
