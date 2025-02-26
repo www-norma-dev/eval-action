@@ -107,6 +107,10 @@ ${JSON.stringify(scenarios, null, 2)}
 ${JSON.stringify(apiResponse, null, 2)}
 \`\`\`
 
+\`\`\`md
+${md}
+\`\`\`
+
 ${md}
 
 ---
