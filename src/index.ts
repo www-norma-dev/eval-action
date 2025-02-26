@@ -42,11 +42,18 @@ async function run(): Promise<void> {
     const test_name: string = core.getInput("test_name");
     const scenarios: string = core.getInput("scenarios");
 
+    // Try parsing `scenarios` if it's a JSON string
+    let parsedScenarios;
+    try {
+      parsedScenarios = JSON.parse(scenarios);
+    } catch (error) {
+      console.error("❌ Error parsing `scenarios`: Invalid JSON format.", error);
+      parsedScenarios = {}; // Set to empty object or default value
+    }
+    
     console.log(`🔄 Sending API request to: ${api_host}`);
-
-    console.log(scenarios);
-
-
+    console.log("Parsed scenarios:", parsedScenarios);
+    
     // Make the API POST request
     const response = await fetch("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
       method: "POST",
@@ -59,9 +66,10 @@ async function run(): Promise<void> {
         x_api_key,
         type,
         test_name,
-        scenarios
-      }),
+        scenarios: parsedScenarios // Ensure it's a valid JSON object or array
+      })
     });
+    
 
     console.log('---------- RESP?SE ---------');
     console.log(response.status);
