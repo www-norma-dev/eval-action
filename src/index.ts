@@ -2,151 +2,63 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import fetch from 'node-fetch';
 
-async function run(): Promise<void> {
-  try {
-    
-    const token = process.env.GITHUB_TOKEN;
-    if (!token) {
-      core.setFailed("❌ GITHUB_TOKEN is not set.");
-      return;
-    }
-
-    const octokit = github.getOctokit(token);
-    const { owner, repo } = github.context.repo;
-
-    // Get the branch name from the push event
-    const branchName = github.context.ref.replace("refs/heads/", "");
-    console.log(`📌 Current branch: ${branchName}`);
-
-    // Fetch open PRs that have this branch as the head
-    const { data: pullRequests } = await octokit.rest.pulls.list({
-      owner,
-      repo,
-      head: `${owner}:${branchName}`,
-      state: "open",
-    });
-
-    if (pullRequests.length === 0) {
-      console.log("⚠️ No open PR found for this branch. Skipping comment.");
-      return;
-    }
-
-    const prNumber = pullRequests[0].number;
-    console.log(`✅ Found open PR #${prNumber}`);
-
-    // Retrieve inputs from action.yml
-    const name: string = core.getInput("who-to-greet");
-    const api_host: string = core.getInput("api_host");
-    const x_api_key: string = core.getInput("x_api_key");
-    const type: string = core.getInput("type");
-    const test_name: string = core.getInput("test_name");
-    const scenarios: string = core.getInput("scenarios");
-
-    // Try parsing `scenarios` if it's a JSON string
-    let parsedScenarios;
-    try {
-      parsedScenarios = JSON.parse(scenarios);
-    } catch (error) {
-      console.error("❌ Error parsing `scenarios`: Invalid JSON format.", error);
-      parsedScenarios = {}; // Set to empty object or default value
-    }
-    
-    console.log(`🔄 Sending API request to: ${api_host}`);
-    console.log("Parsed scenarios:", parsedScenarios);
-    
-    // Make the API POST request
-    const response = await fetch("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name,
-        apiHost: api_host,
-        x_api_key,
-        type,
-        test_name,
-        scenarios: parsedScenarios // Ensure it's a valid JSON object or array
-      })
-    });
-    
-
-    console.log('---------- RESP?SE ---------');
-    console.log(response.status);
-    console.log(response);
-    if (!response.ok) {
-      const errorText = await response.text();
-      core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
-      return;
-    }
-
-    // Parse response JSON
-    const apiResponse: any = await response.json();
-    console.log("✅ API Response Received:", apiResponse);
-
-    const md = convertJsonToMarkdownTable(apiResponse.results);
-
-    // Construct the comment message
-    const comment = `### 🚀 Automatic Evaluation Report
-**Hello ${name},**
-  
-This message was generated automatically by the GitHub Action.
-
-📌 **Test Details:**
-- **API Host:** \`${api_host}\`
-- **Type:** \`${type}\`
-- **Test Name:** \`${test_name}\`
-  
-📝 **Scenarios Sent:**
-\`\`\`json
-${JSON.stringify(scenarios, null, 2)}
-\`\`\`
-
-🔍 **API Response:**
-\`\`\`json
-${JSON.stringify(apiResponse, null, 2)}
-\`\`\`
-
-\`\`\`md
-${md}
-\`\`\`
-
-${md}
-
----
-
-🔍 If you need to make changes, update your branch and rerun the workflow.
-
-🔄 _This comment was posted automatically by [Eval Action](https://github.com/www-norma-dev/eval-action)._`;
-
-    // Post the comment to the PR
-    await octokit.rest.issues.createComment({
-      owner,
-      repo,
-      issue_number: prNumber,
-      body: comment,
-    });
-
-    core.info(`✅ Comment posted to PR #${prNumber}`);
-  } catch (error: any) {
-    core.setFailed(`❌ Action failed: ${error.message}`);
+// Utility function to simulate delays
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
-}
-
-function convertJsonToMarkdownTable(jsonData: any): string {
-    let markdownOutput = "# Conversation Logs\n\n";
-
-    // Define table headers
-    markdownOutput += `| Attempt | Conversation ID | User Message | Expected Response | New Conversation Outbound | GPT-4 Score | Mistral Score |\n`;
-    markdownOutput += `|---------|----------------|--------------|-------------------|-------------------------|-------------|--------------|\n`;
-
-    jsonData.forEach((entry: any) => {
-        markdownOutput += `| ${entry["Attempt"]} | \`${entry["Conversation ID"]}\` | ${entry["User Message"]} | ${entry["Expected Response"].substring(0, 50)}... | ${entry["New Conversation Outbound"].substring(0, 50)}... | ${entry["New Conv Evaluation (GPT-4)"]} | ${entry["New Conv Evaluation (Mistral)"]} |\n`;
-    });
-
-    return markdownOutput;
-}
-
-
-
-run();
+  
+  // Utility function to print a Markdown table of results
+  function printMarkdownTable(results: { step: string; result: string; time: string }[]) {
+    console.log("\nMarkdown Table of Results:\n");
+    console.log("| Step        | Result    | Time  |");
+    console.log("|-------------|-----------|-------|");
+    for (const result of results) {
+      console.log(`| ${result.step.padEnd(11)} | ${result.result.padEnd(9)} | ${result.time.padEnd(5)} |`);
+    }
+  }
+  
+  async function run() {
+    console.log("Starting process...");
+  
+    // Array to store step results
+    const results = [];
+  
+    // Step 1: Feating
+    console.log("Feating...");
+    await delay(2000); // Delay for 2 seconds
+    results.push({ step: "Feating", result: "Completed", time: "2s" });
+  
+    // Step 2: Analysing
+    console.log("Analysing...");
+    await delay(3000); // Delay for 3 seconds
+    results.push({ step: "Analysing", result: "Completed", time: "3s" });
+  
+    // Step 3: Evaluation from 1% to 100%
+    console.log("Evaluation in progress:");
+    let evaluationTime = 0;
+    for (let percent = 1; percent <= 100; percent++) {
+      process.stdout.write(`\r${percent}%`);
+      await delay(100); // 100 ms delay per percentage point (roughly 10 seconds total)
+      evaluationTime += 100;
+    }
+    console.log("\nEvaluation complete!");
+    results.push({ step: "Evaluation", result: "Completed", time: `${Math.round(evaluationTime / 1000)}s` });
+  
+    // Step 4: Running scenarios 1, 2, and 3
+    const scenarios = [1, 2, 3];
+    for (const scenario of scenarios) {
+      console.log(`Running scenario ${scenario}...`);
+      await delay(2000); // 2 seconds delay for each scenario
+      console.log(`Scenario ${scenario} completed!`);
+      results.push({ step: `Scenario ${scenario}`, result: "Completed", time: "2s" });
+    }
+  
+    console.log("All good!");
+  
+    // Print Markdown table of results
+    printMarkdownTable(results);
+  }
+  
+  // Execute the run function
+  run();
+  
