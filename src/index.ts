@@ -3,12 +3,6 @@ function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
   
-  // Utility: Truncate text for table display
-  function truncate(text: string, maxLength = 40) {
-    if (!text) return "";
-    return text.length > maxLength ? text.substring(0, maxLength - 3) + "..." : text;
-  }
-  
   // Utility: Spinner animation (for data retrieval and checking)
   async function spinner(duration: number, message: string, color = "\x1b[36m") {
     const spinnerFrames = ["|", "/", "-", "\\"];
@@ -23,13 +17,12 @@ function delay(ms: number) {
     process.stdout.write(`\r\x1b[32m${message} ✔\x1b[0m\n`);
   }
   
-  // Utility: Progress Bar (for scenarios)
-  async function progressBar(totalDuration: number, message: string, barLength = 20, color = "\x1b[33m") {
-    const totalSteps = barLength;
+  // Utility: Progress Bar with 10% increments
+  async function progressBar(totalDuration: number, message: string, totalSteps = 10, color = "\x1b[33m") {
     const stepDuration = totalDuration / totalSteps;
     process.stdout.write(color + message);
     for (let i = 0; i <= totalSteps; i++) {
-      const percent = Math.round((i / totalSteps) * 100);
+      const percent = i * 10;
       const filled = "=".repeat(i);
       const empty = " ".repeat(totalSteps - i);
       process.stdout.write(`\r${color}${message} [${filled}${empty}] ${percent}%\x1b[0m`);
@@ -46,13 +39,44 @@ function delay(ms: number) {
     console.log(border + "\x1b[0m\n");
   }
   
-  // Utility: Print a Markdown table for the result data
-  function printResultsTable(data: any) {
-    console.log("\n### Final Results\n");
-    console.log("| Attempt | Conversation ID                         | Scenario                                | User Message | Expected Response                       | New Conv Outbound                        | GPT-4 Eval | Mistral Eval |");
-    console.log("|---------|-----------------------------------------|-----------------------------------------|--------------|-----------------------------------------|------------------------------------------|------------|--------------|");
-    data.forEach((item: any) => {
-      console.log(`| ${item["Attempt"].toString().padEnd(7)} | ${item["Conversation ID"].padEnd(39)} | ${truncate(item["Scenario"], 39).padEnd(39)} | ${truncate(item["User Message"], 12).padEnd(12)} | ${truncate(item["Expected Response"], 39).padEnd(39)} | ${truncate(item["New Conversation Outbound"], 38).padEnd(38)} | ${item["New Conv Evaluation (GPT-4)"].toString().padEnd(10)} | ${item["New Conv Evaluation (Mistral)"].toString().padEnd(12)} |`);
+  // Utility: Print a Markdown table with full result details
+  function printResultsTableFull(data: any[]) {
+    // Define headers for every field from the provided data
+    const headers = [
+      "Attempt", 
+      "Conversation ID", 
+      "Expected Response", 
+      "Metadata Extraction score", 
+      "New Conv Evaluation (GPT-4)", 
+      "New Conv Evaluation (Mistral)", 
+      "New Conv Handoff Metadata", 
+      "New Conv Outbound Metadata", 
+      "New Conversation Outbound", 
+      "Scenario", 
+      "User Message"
+    ];
+    
+    // Build header row and separator
+    const headerRow = "| " + headers.join(" | ") + " |";
+    const separatorRow = "| " + headers.map(() => "---").join(" | ") + " |";
+    
+    console.log("\n### Final Results Table\n");
+    console.log(headerRow);
+    console.log(separatorRow);
+    
+    // Build each row of data (stringify objects)
+    data.forEach(item => {
+      const row = "| " + headers.map(key => {
+        let value = item[key];
+        if (typeof value === "object" && value !== null) {
+          return JSON.stringify(value);
+        } else if (value === null) {
+          return "null";
+        } else {
+          return value.toString();
+        }
+      }).join(" | ") + " |";
+      console.log(row);
     });
   }
   
@@ -153,14 +177,14 @@ function delay(ms: number) {
     await spinner(1500, "Checking Data...", "\x1b[35m");
     const checkTime = ((Date.now() - startCheck) / 1000).toFixed(1) + "s";
   
-    // Step 3: Running 3 Scenarios with progress bars
+    // Step 3: Running 3 Scenarios with progress bars in 10% increments
     const scenarios = [1, 2, 3];
     for (const scenario of scenarios) {
       console.log(`\n\x1b[34mScenario ${scenario}: Starting...\x1b[0m`);
       const startScenario = Date.now();
   
-      // Simulate evaluation/testing progress for this scenario (3 seconds each)
-      await progressBar(3000, `Scenario ${scenario} Progress: `, 20, "\x1b[33m");
+      // Simulate evaluation/testing progress for this scenario (3 seconds total)
+      await progressBar(3000, `Scenario ${scenario} Progress: `, 10, "\x1b[33m");
   
       const scenarioTime = ((Date.now() - startScenario) / 1000).toFixed(1) + "s";
       console.log(`\x1b[32mScenario ${scenario} completed in ${scenarioTime}!\x1b[0m`);
@@ -169,8 +193,8 @@ function delay(ms: number) {
   
     console.log("\n\x1b[32mAll scenarios executed successfully. Process complete!\x1b[0m");
   
-    // Print the provided result data as a Markdown table
-    printResultsTable(resultData);
+    // Print the full results table with all details
+    printResultsTableFull(resultData);
   }
   
   // Execute the process
