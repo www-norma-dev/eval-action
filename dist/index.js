@@ -37422,6 +37422,7 @@ async function run() {
         // Parse response JSON
         const apiResponse = await response.json();
         console.log("✅ API Response Received:", apiResponse);
+        const md = convertJsonToMarkdownTable(apiResponse.results);
         // Construct the comment message
         const comment = `### 🚀 Automatic Evaluation Report
 **Hello ${name},**
@@ -37443,6 +37444,8 @@ ${JSON.stringify(scenarios, null, 2)}
 ${JSON.stringify(apiResponse, null, 2)}
 \`\`\`
 
+${md}
+
 ---
 
 🔍 If you need to make changes, update your branch and rerun the workflow.
@@ -37460,6 +37463,16 @@ ${JSON.stringify(apiResponse, null, 2)}
     catch (error) {
         core.setFailed(`❌ Action failed: ${error.message}`);
     }
+}
+function convertJsonToMarkdownTable(jsonData) {
+    let markdownOutput = "# Conversation Logs\n\n";
+    // Define table headers
+    markdownOutput += `| Attempt | Conversation ID | User Message | Expected Response | New Conversation Outbound | GPT-4 Score | Mistral Score |\n`;
+    markdownOutput += `|---------|----------------|--------------|-------------------|-------------------------|-------------|--------------|\n`;
+    jsonData.forEach((entry) => {
+        markdownOutput += `| ${entry["Attempt"]} | \`${entry["Conversation ID"]}\` | ${entry["User Message"]} | ${entry["Expected Response"].substring(0, 50)}... | ${entry["New Conversation Outbound"].substring(0, 50)}... | ${entry["New Conv Evaluation (GPT-4)"]} | ${entry["New Conv Evaluation (Mistral)"]} |\n`;
+    });
+    return markdownOutput;
 }
 run();
 
