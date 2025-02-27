@@ -130,11 +130,11 @@ function convertJsonToMarkdownTable(jsonData: any): string {
     let markdownOutput = "# Conversation Logs\n\n";
 
     // Define table headers
-    markdownOutput += `| Attempt | Conversation ID | User Message | Expected Response | New Conversation Outbound | GPT-4 Score | Mistral Score |\n`;
-    markdownOutput += `|---------|----------------|--------------|-------------------|-------------------------|-------------|--------------|\n`;
+    markdownOutput += `| Attempt | Conversation ID | User Message | Expected Response | New Conversation Outbound | GPT-4 Score | Mistral Score | Scenario |\n`;
+    markdownOutput += `|---------|----------------|--------------|-------------------|-------------------------|-------------|--------------|---------|\n`;
 
     jsonData.forEach((entry: any) => {
-        markdownOutput += `| ${entry["Attempt"]} | \`${entry["Conversation ID"]}\` | ${entry["User Message"]} | ${entry["Expected Response"].substring(0, 50)}... | ${entry["New Conversation Outbound"].substring(0, 50)}... | ${entry["New Conv Evaluation (GPT-4)"]} | ${entry["New Conv Evaluation (Mistral)"]} |\n`;
+        markdownOutput += `| ${entry["Attempt"]} | \`${entry["Conversation ID"]}\` | ${entry["User Message"]} | ${entry["Expected Response"]}... | ${entry["New Conversation Outbound"]}... | ${entry["New Conv Evaluation (GPT-4)"]} | ${entry["New Conv Evaluation (Mistral)"]} | ${entry["Scenario"]} |\n`;
     });
 
     return markdownOutput;
