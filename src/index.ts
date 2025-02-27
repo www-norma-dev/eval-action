@@ -134,7 +134,7 @@ function convertJsonToMarkdownTable(jsonData: any): string {
     markdownOutput += `|----|----------|---------|\n`;
 
     jsonData.forEach((entry: any, index: number) => {
-        let content = `Expected Response: ${entry["Expected Response"]}\nNew Conversation Outbound: ${entry["New Conversation Outbound"]}\nGPT-4 Score: ${entry["New Conv Evaluation (GPT-4)"]}\nMistral Score: ${entry["New Conv Evaluation (Mistral)"]}`;
+        let content = `**Expected Response**: ${entry["Expected Response"]}\n\n**New Conversation Outbound**: ${entry["New Conversation Outbound"]}\n\n**GPT-4 Score**: ${entry["New Conv Evaluation (GPT-4)"]}\n\n**Mistral Score**: ${entry["New Conv Evaluation (Mistral)"]}`;
 
         markdownOutput += `| ${index + 1} | ${entry["Scenario"]} | ${content.replace(/\n/g, "<br>")} |\n`;
     });
