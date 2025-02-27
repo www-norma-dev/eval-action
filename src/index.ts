@@ -90,25 +90,15 @@ async function run(): Promise<void> {
     const comment = `### 🚀 Automatic Evaluation Report
 **Hello ${name},**
   
-This message was generated automatically by the GitHub Action.
-
 📌 **Test Details:**
 - **API Host:** \`${api_host}\`
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
   
-📝 **Scenarios Sent:**
-\`\`\`json
-${JSON.stringify(scenarios, null, 2)}
-\`\`\`
 
-🔍 **API Response:**
+🔍 **Results:**
 \`\`\`json
 ${JSON.stringify(apiResponse, null, 2)}
-\`\`\`
-
-\`\`\`md
-${md}
 \`\`\`
 
 ${md}
@@ -117,7 +107,10 @@ ${md}
 
 🔍 If you need to make changes, update your branch and rerun the workflow.
 
-🔄 _This comment was posted automatically by [Eval Action](https://github.com/www-norma-dev/eval-action)._`;
+🔄 _[Eval Action](https://eval.norma.dev/)._`;
+
+    console.log(formatTableForConsole(apiResponse.results));
+
 
     // Post the comment to the PR
     await octokit.rest.issues.createComment({
@@ -145,6 +138,27 @@ function convertJsonToMarkdownTable(jsonData: any): string {
     });
 
     return markdownOutput;
+}
+
+
+function formatTableForConsole(jsonData: any[]): string {
+    if (!jsonData || jsonData.length === 0) return "No results to display.";
+
+    const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound", "GPT-4 Score", "Mistral Score"];
+    const columnWidths = headers.map((header, i) => 
+        Math.max(header.length, ...jsonData.map(row => (row[headers[i]] ? row[headers[i]].toString().length : 0)))
+    );
+
+    // Generate table header
+    let table = headers.map((header, i) => header.padEnd(columnWidths[i])).join(" | ") + "\n";
+    table += columnWidths.map(width => "-".repeat(width)).join("-|-") + "\n";
+
+    // Generate rows
+    jsonData.forEach(row => {
+        table += headers.map((header, i) => (row[header] ? row[header].toString().padEnd(columnWidths[i]) : "-".padEnd(columnWidths[i]))).join(" | ") + "\n";
+    });
+
+    return table;
 }
 
 
