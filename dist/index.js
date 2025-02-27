@@ -37465,7 +37465,7 @@ function convertJsonToMarkdownTable(jsonData) {
     markdownOutput += `| ID | Scenario | Content |\n`;
     markdownOutput += `|----|----------|---------|\n`;
     jsonData.forEach((entry, index) => {
-        let content = `**Expected Response**: ${entry["Expected Response"]}\n\n**New Conversation Outbound**: ${entry["New Conversation Outbound"]}\n\n**GPT-4 Score**: ${entry["New Conv Evaluation (GPT-4)"]}\n\n**Mistral Score**: ${entry["New Conv Evaluation (Mistral)"]}`;
+        let content = `**Conversation ID**: ${entry["Conversation ID"]}\n\n**Expected Response**: ${entry["Expected Response"]}\n\n**New Conversation Outbound**: ${entry["New Conversation Outbound"]}\n\n**GPT-4 Score**: ${entry["New Conv Evaluation (GPT-4)"]}\n\n**Mistral Score**: ${entry["New Conv Evaluation (Mistral)"]}`;
         markdownOutput += `| ${index + 1} | ${entry["Scenario"]} | ${content.replace(/\n/g, "<br>")} |\n`;
     });
     return markdownOutput;
