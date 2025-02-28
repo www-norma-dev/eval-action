@@ -37362,8 +37362,11 @@ async function run() {
         }
         const octokit = github.getOctokit(token);
         const { owner, repo } = github.context.repo;
-        // Get the branch name from the push event
-        const branchName = github.context.ref.replace("refs/heads/", "");
+        // Extract branch name from the pull_request payload if available,
+        // otherwise fallback to removing "refs/heads/" from the ref.
+        const branchName = github.context.payload.pull_request
+            ? github.context.payload.pull_request.head.ref
+            : github.context.ref.replace("refs/heads/", "");
         console.log(`📌 Current branch: ${branchName}`);
         // Fetch open PRs that have this branch as the head
         const { data: pullRequests } = await octokit.rest.pulls.list({
@@ -37392,7 +37395,7 @@ async function run() {
         }
         catch (error) {
             console.error("❌ Error parsing `scenarios`: Invalid JSON format.", error);
-            parsedScenarios = {}; // Set to empty object or default value
+            parsedScenarios = {}; // Fallback to empty object
         }
         console.log(`🔄 Sending API request to: ${api_host}`);
         console.log("Parsed scenarios:", parsedScenarios);
@@ -37408,10 +37411,10 @@ async function run() {
                 x_api_key,
                 type,
                 test_name,
-                scenarios: parsedScenarios // Ensure it's a valid JSON object or array
+                scenarios: parsedScenarios
             })
         });
-        console.log('---------- RESP?SE ---------');
+        console.log('---------- RESPONSE ---------');
         console.log(response.status);
         console.log(response);
         if (!response.ok) {
@@ -37432,7 +37435,6 @@ async function run() {
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
   
-
 🔍 **Results:**
 \`\`\`json
 ${JSON.stringify(apiResponse, null, 2)}
@@ -37461,7 +37463,6 @@ ${md}
 }
 function convertJsonToMarkdownTable(jsonData) {
     let markdownOutput = "# Conversation Logs\n\n";
-    // Define table headers
     markdownOutput += `| ID | Scenario | Content |\n`;
     markdownOutput += `|----|----------|---------|\n`;
     jsonData.forEach((entry, index) => {
@@ -37475,10 +37476,8 @@ function formatTableForConsole(jsonData) {
         return "No results to display.";
     const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound", "GPT-4 Score", "Mistral Score"];
     const columnWidths = headers.map((header, i) => Math.max(header.length, ...jsonData.map(row => (row[headers[i]] ? row[headers[i]].toString().length : 0))));
-    // Generate table header
     let table = headers.map((header, i) => header.padEnd(columnWidths[i])).join(" | ") + "\n";
     table += columnWidths.map(width => "-".repeat(width)).join("-|-") + "\n";
-    // Generate rows
     jsonData.forEach(row => {
         table += headers.map((header, i) => (row[header] ? row[header].toString().padEnd(columnWidths[i]) : "-".padEnd(columnWidths[i]))).join(" | ") + "\n";
     });

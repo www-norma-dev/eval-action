@@ -4,7 +4,6 @@ import fetch from 'node-fetch';
 
 async function run(): Promise<void> {
   try {
-    
     const token = process.env.GITHUB_TOKEN;
     if (!token) {
       core.setFailed("❌ GITHUB_TOKEN is not set.");
@@ -14,8 +13,11 @@ async function run(): Promise<void> {
     const octokit = github.getOctokit(token);
     const { owner, repo } = github.context.repo;
 
-    // Get the branch name from the push event
-    const branchName = github.context.ref.replace("refs/heads/", "");
+    // Extract branch name from the pull_request payload if available,
+    // otherwise fallback to removing "refs/heads/" from the ref.
+    const branchName = github.context.payload.pull_request
+      ? github.context.payload.pull_request.head.ref
+      : github.context.ref.replace("refs/heads/", "");
     console.log(`📌 Current branch: ${branchName}`);
 
     // Fetch open PRs that have this branch as the head
@@ -48,7 +50,7 @@ async function run(): Promise<void> {
       parsedScenarios = JSON.parse(scenarios);
     } catch (error) {
       console.error("❌ Error parsing `scenarios`: Invalid JSON format.", error);
-      parsedScenarios = {}; // Set to empty object or default value
+      parsedScenarios = {}; // Fallback to empty object
     }
     
     console.log(`🔄 Sending API request to: ${api_host}`);
@@ -66,12 +68,11 @@ async function run(): Promise<void> {
         x_api_key,
         type,
         test_name,
-        scenarios: parsedScenarios // Ensure it's a valid JSON object or array
+        scenarios: parsedScenarios
       })
     });
     
-
-    console.log('---------- RESP?SE ---------');
+    console.log('---------- RESPONSE ---------');
     console.log(response.status);
     console.log(response);
     if (!response.ok) {
@@ -95,7 +96,6 @@ async function run(): Promise<void> {
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
   
-
 🔍 **Results:**
 \`\`\`json
 ${JSON.stringify(apiResponse, null, 2)}
@@ -110,7 +110,6 @@ ${md}
 🔄 _[Eval Action](https://eval.norma.dev/)._`;
 
     console.log(formatTableForConsole(apiResponse.results));
-
 
     // Post the comment to the PR
     await octokit.rest.issues.createComment({
@@ -127,43 +126,34 @@ ${md}
 }
 
 function convertJsonToMarkdownTable(jsonData: any): string {
-    let markdownOutput = "# Conversation Logs\n\n";
+  let markdownOutput = "# Conversation Logs\n\n";
+  markdownOutput += `| ID | Scenario | Content |\n`;
+  markdownOutput += `|----|----------|---------|\n`;
 
-    // Define table headers
-    markdownOutput += `| ID | Scenario | Content |\n`;
-    markdownOutput += `|----|----------|---------|\n`;
+  jsonData.forEach((entry: any, index: number) => {
+    let content = `**Conversation ID**: ${entry["Conversation ID"]}\n\n**Expected Response**: ${entry["Expected Response"]}\n\n**New Conversation Outbound**: ${entry["New Conversation Outbound"]}\n\n**GPT-4 Score**: ${entry["New Conv Evaluation (GPT-4)"]}\n\n**Mistral Score**: ${entry["New Conv Evaluation (Mistral)"]}`;
+    markdownOutput += `| ${index + 1} | ${entry["Scenario"]} | ${content.replace(/\n/g, "<br>")} |\n`;
+  });
 
-    jsonData.forEach((entry: any, index: number) => {
-        let content = `**Conversation ID**: ${entry["Conversation ID"]}\n\n**Expected Response**: ${entry["Expected Response"]}\n\n**New Conversation Outbound**: ${entry["New Conversation Outbound"]}\n\n**GPT-4 Score**: ${entry["New Conv Evaluation (GPT-4)"]}\n\n**Mistral Score**: ${entry["New Conv Evaluation (Mistral)"]}`;
-
-        markdownOutput += `| ${index + 1} | ${entry["Scenario"]} | ${content.replace(/\n/g, "<br>")} |\n`;
-    });
-
-    return markdownOutput;
+  return markdownOutput;
 }
-
-
 
 function formatTableForConsole(jsonData: any[]): string {
-    if (!jsonData || jsonData.length === 0) return "No results to display.";
+  if (!jsonData || jsonData.length === 0) return "No results to display.";
 
-    const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound", "GPT-4 Score", "Mistral Score"];
-    const columnWidths = headers.map((header, i) => 
-        Math.max(header.length, ...jsonData.map(row => (row[headers[i]] ? row[headers[i]].toString().length : 0)))
-    );
+  const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound", "GPT-4 Score", "Mistral Score"];
+  const columnWidths = headers.map((header, i) => 
+    Math.max(header.length, ...jsonData.map(row => (row[headers[i]] ? row[headers[i]].toString().length : 0)))
+  );
 
-    // Generate table header
-    let table = headers.map((header, i) => header.padEnd(columnWidths[i])).join(" | ") + "\n";
-    table += columnWidths.map(width => "-".repeat(width)).join("-|-") + "\n";
+  let table = headers.map((header, i) => header.padEnd(columnWidths[i])).join(" | ") + "\n";
+  table += columnWidths.map(width => "-".repeat(width)).join("-|-") + "\n";
 
-    // Generate rows
-    jsonData.forEach(row => {
-        table += headers.map((header, i) => (row[header] ? row[header].toString().padEnd(columnWidths[i]) : "-".padEnd(columnWidths[i]))).join(" | ") + "\n";
-    });
+  jsonData.forEach(row => {
+    table += headers.map((header, i) => (row[header] ? row[header].toString().padEnd(columnWidths[i]) : "-".padEnd(columnWidths[i]))).join(" | ") + "\n";
+  });
 
-    return table;
+  return table;
 }
-
-
 
 run();
