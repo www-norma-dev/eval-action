@@ -36,18 +36,19 @@ async function run(): Promise<void> {
     const prNumber = pullRequests[0].number;
     console.log(`✅ Found open PR #${prNumber}`);
 
-
+    const comment = `### 🚀 Automatic Evaluation Report`;
     // Post the comment to the PR
     await octokit.rest.issues.createComment({
       owner,
       repo,
       issue_number: prNumber,
-      body: 'This is a test comment.',
+      body: comment
     });
 
     core.info(`✅ Comment posted to PR #${prNumber}`);
   } catch (error: any) {
     core.setFailed(`❌ Action failed: ${error.message}`);
+    core.setFailed(`${error.stack}`);
   }
 }
 
