@@ -1,4 +1,4 @@
-import { endGroup, startGroup } from "@actions/core";
+import { endGroup, startGroup, info } from "@actions/core";
 import type { GitHub } from "@actions/github/lib/utils";
 import { Context } from "@actions/github/lib/context";
 
@@ -8,71 +8,75 @@ export async function postChannelSuccessComment(
   result: string,
   commit: string
 ) {
-  // Build the comment body with a hidden marker.
-  const commentBody = `<!-- norma-eval-comment -->
+  startGroup("Commenting on PR");
+
+  try {
+    // Build the comment body with a hidden marker.
+    const commentBody = `<!-- norma-eval-comment -->
 ### 🚀 Automatic Evaluation Report
 **Result:** ${result}  
 **Commit:** ${commit}
 
 <sub>Posted by GitHub Actions Bot</sub>`;
 
+    // Determine the branch name.
+    const branchName = context.payload.pull_request
+      ? context.payload.pull_request.head.ref
+      : context.ref.replace("refs/heads/", "");
+    console.log(`📌 Current branch: ${branchName}`);
 
-// Use the pull request number if available, otherwise fall back to context.issue.number.
-const issueNumber = context.payload.pull_request
-? context.payload.pull_request.number
-: context.issue.number;
+    const { owner, repo } = context.repo;
 
-const createResponse = await github.rest.issues.createComment({
-    ...context.repo,
-    issue_number: issueNumber,
-    body: commentBody,
-  });
-  
-  const commentInfo = {
-    ...context.repo,
-    issue_number: issueNumber,
-  };
+    // Fetch open PRs that have this branch as the head.
+    const { data: pullRequests } = await github.rest.pulls.list({
+      owner,
+      repo,
+      head: `${owner}:${branchName}`,
+      state: "open",
+    });
 
-  startGroup("Commenting on PR");
-  console.log("Comment info:", commentInfo);
-
-  let commentId: number | undefined;
-  try {
-    // List existing comments on the PR/issue.
-    const { data: comments } = await github.rest.issues.listComments(commentInfo);
-    console.log("Existing comments:", comments);
-    // Look for a comment containing our hidden marker.
-    for (let i = 0; i < comments.length; i++) {
-      const c = comments[i];
-      if (c.body && c.body.includes("<!-- norma-eval-comment -->")) {
-        commentId = c.id;
-        break;
-      }
+    if (pullRequests.length === 0) {
+      console.log("⚠️ No open PR found for this branch. Skipping comment.");
+      return;
     }
-  } catch (e: any) {
-    console.log("Error checking for previous comments:", e.message);
-  }
 
-  try {
-    if (commentId) {
+    const prNumber = pullRequests[0].number;
+    console.log(`✅ Found open PR #${prNumber}`);
+
+    // Fetch existing comments on the PR.
+    const { data: existingComments } = await github.rest.issues.listComments({
+      owner,
+      repo,
+      issue_number: prNumber,
+    });
+
+    // Look for a comment with our hidden marker.
+    const existingComment = existingComments.find((c: any) =>
+      c.body && c.body.includes("<!-- norma-eval-comment -->")
+    );
+
+    if (existingComment) {
       // Update the existing comment.
-      const updateResponse = await github.rest.issues.updateComment({
-        ...context.repo,
-        comment_id: commentId,
+      await github.rest.issues.updateComment({
+        owner,
+        repo,
+        comment_id: existingComment.id,
         body: commentBody,
       });
-      console.log(`✅ Updated existing comment (ID: ${commentId}). Response:`, updateResponse.data);
+      info(`✅ Updated existing comment in PR #${prNumber}`);
     } else {
-      // Create a new comment if one doesn't exist.
-      const createResponse = await github.rest.issues.createComment({
-        ...context.repo,
-        issue_number: issueNumber,
+      // Create a new comment.
+      await github.rest.issues.createComment({
+        owner,
+        repo,
+        issue_number: prNumber,
         body: commentBody,
       });
-      console.log(`✅ Created new comment (ID: ${createResponse.data.id}). Response:`, createResponse.data);
+      info(`✅ Created new comment in PR #${prNumber}`);
     }
   } catch (e: any) {
     console.log(`Error posting/updating comment: ${e.message}`);
+  } finally {
+    endGroup();
   }
-  endGroup();
 }
