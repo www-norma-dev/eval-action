@@ -32637,17 +32637,27 @@ async function postChannelSuccessComment(github, context, result, commit) {
 **Commit:** ${commit}
 
 <sub>Posted by GitHub Actions Bot</sub>`;
-    // Use the repository and issue info from context.
+    // Use the pull request number if available, otherwise fall back to context.issue.number.
+    const issueNumber = context.payload.pull_request
+        ? context.payload.pull_request.number
+        : context.issue.number;
+    const createResponse = await github.rest.issues.createComment({
+        ...context.repo,
+        issue_number: issueNumber,
+        body: commentBody,
+    });
     const commentInfo = {
         ...context.repo,
-        issue_number: context.issue.number,
+        issue_number: issueNumber,
     };
     (0, core_1.startGroup)("Commenting on PR");
+    console.log("Comment info:", commentInfo);
     let commentId;
     try {
-        // List existing comments
+        // List existing comments on the PR/issue.
         const { data: comments } = await github.rest.issues.listComments(commentInfo);
-        // Look for a comment containing our hidden marker
+        console.log("Existing comments:", comments);
+        // Look for a comment containing our hidden marker.
         for (let i = 0; i < comments.length; i++) {
             const c = comments[i];
             if (c.body && c.body.includes("<!-- norma-eval-comment -->")) {
@@ -32657,26 +32667,26 @@ async function postChannelSuccessComment(github, context, result, commit) {
         }
     }
     catch (e) {
-        console.log("Error checking for previous comments: " + e.message);
+        console.log("Error checking for previous comments:", e.message);
     }
     try {
         if (commentId) {
-            // Update the existing comment
-            await github.rest.issues.updateComment({
+            // Update the existing comment.
+            const updateResponse = await github.rest.issues.updateComment({
                 ...context.repo,
                 comment_id: commentId,
                 body: commentBody,
             });
-            console.log(`✅ Updated existing comment (ID: ${commentId}).`);
+            console.log(`✅ Updated existing comment (ID: ${commentId}). Response:`, updateResponse.data);
         }
         else {
-            // Create a new comment if one doesn't exist
-            const newComment = await github.rest.issues.createComment({
+            // Create a new comment if one doesn't exist.
+            const createResponse = await github.rest.issues.createComment({
                 ...context.repo,
-                issue_number: context.issue.number,
+                issue_number: issueNumber,
                 body: commentBody,
             });
-            console.log(`✅ Created new comment (ID: ${newComment.data.id}).`);
+            console.log(`✅ Created new comment (ID: ${createResponse.data.id}). Response:`, createResponse.data);
         }
     }
     catch (e) {
