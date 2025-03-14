@@ -7,12 +7,12 @@ async function run(): Promise<void> {
     core.info('--------- START ');
     // Retrieve token from environment or input
     const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
+    core.info('--------- START GITHUB_TOKEN');
+    core.info(token);
     if (!token) {
       core.setFailed("❌ GITHUB_TOKEN is not set.");
       return;
     }
-    core.info('--------- START GITHUB_TOKEN');
-    core.info(token);
 
     const octokit = github.getOctokit(token);
     
