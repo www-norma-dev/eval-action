@@ -3,37 +3,39 @@ import * as github from '@actions/github';
 import { postChannelSuccessComment } from './postChannelSuccessComment';
 
 async function run(): Promise<void> {
-  const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
-  const octokit = token ? github.getOctokit(token) : undefined;
-
   try {
+    core.info('--------- START ');
+    // Retrieve token from environment or input
+    const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
+    if (!token) {
+      core.setFailed("❌ GITHUB_TOKEN is not set.");
+      return;
+    }
+    core.info('--------- START GITHUB_TOKEN', token);
+
+    const octokit = github.getOctokit(token);
+    
+    // Check if this event is a pull request
     const isPullRequest = !!github.context.payload.pull_request;
-
-
-    let finish = (details: Object) => console.log(details);
-    if (token && isPullRequest) {
-      core.setSecret("This is a secret token");
-      core.setSecret(token);
-      console.log('--------- postChannelSuccessComment start');
+    core.info(`Is this a pull request event? ${isPullRequest}`);
+    
+    if (!isPullRequest) {
+      core.info("This action only runs on pull_request events. Exiting.");
+      return;
     }
 
-    if (token && isPullRequest && !!octokit) {
-      const commitId = github.context.payload.pull_request?.head.sha.substring(0, 7);
+    // Optionally, hide token from logs
+    core.setSecret(token);
 
-      await postChannelSuccessComment(octokit, github.context, "success", commitId);
-      console.log('--------- postChannelSuccessComment complete');
-      // logs 
-    }
-    // const token = process.env.GITHUB_TOKEN;
-    // if (!token) {
-    //   core.setFailed("❌ GITHUB_TOKEN is not set.");
-    //   return;
-    // }
-    return;
-  }
+    core.info('--------- postChannelSuccessComment start');
+    const commitId = github.context.payload.pull_request?.head.sha.substring(0, 7) || "unknown";
 
-  catch (error: any) {
-    core.setFailed(error.message);
+    // Call the function to post or update the comment
+    await postChannelSuccessComment(octokit, github.context, "success", commitId);
+    core.info('--------- postChannelSuccessComment complete');
+    
+  } catch (error: any) {
+    core.setFailed(`❌ Action failed: ${error.message}`);
   }
 }
 
