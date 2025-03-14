@@ -11,7 +11,8 @@ async function run(): Promise<void> {
       core.setFailed("❌ GITHUB_TOKEN is not set.");
       return;
     }
-    core.info('--------- START GITHUB_TOKEN', token);
+    core.info('--------- START GITHUB_TOKEN');
+    core.info(token);
 
     const octokit = github.getOctokit(token);
     
