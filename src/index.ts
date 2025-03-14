@@ -1,16 +1,38 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import fetch from 'node-fetch';
+import { postChannelSuccessComment } from './postChannelSuccessComment';
 
 async function run(): Promise<void> {
+  const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
+  const octokit = token ? github.getOctokit(token) : undefined;
+
   try {
-    const token = process.env.GITHUB_TOKEN;
-    if (!token) {
-      core.setFailed("❌ GITHUB_TOKEN is not set.");
-      return;
+    const isPullRequest = !!github.context.payload.pull_request;
+
+
+    let finish = (details: Object) => console.log(details);
+    if (token && isPullRequest) {
+      core.setSecret("This is a secret token");
+      core.setSecret(token);
+      console.log('--------- postChannelSuccessComment start');
     }
 
-    const octokit = github.getOctokit(token);
+    if (token && isPullRequest && !!octokit) {
+      const commitId = github.context.payload.pull_request?.head.sha.substring(0, 7);
+
+      await postChannelSuccessComment(octokit, github.context, "success", commitId);
+      console.log('--------- postChannelSuccessComment complete');
+      // logs 
+    }
+    // const token = process.env.GITHUB_TOKEN;
+    // if (!token) {
+    //   core.setFailed("❌ GITHUB_TOKEN is not set.");
+    //   return;
+    // }
+    return;
+
+    // const octokit = github.getOctokit(token);
     const { owner, repo } = github.context.repo;
 
     // Extract branch name from the pull_request payload if available,
@@ -52,10 +74,10 @@ async function run(): Promise<void> {
       console.error("❌ Error parsing `scenarios`: Invalid JSON format.", error);
       parsedScenarios = {}; // Fallback to empty object
     }
-    
+
     console.log(`🔄 Sending API request to: ${api_host}`);
     console.log("Parsed scenarios:", parsedScenarios);
-    
+
     // Make the API POST request
     const response = await fetch("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
       method: "POST",
@@ -71,7 +93,7 @@ async function run(): Promise<void> {
         scenarios: parsedScenarios
       })
     });
-    
+
     console.log('---------- RESPONSE ---------');
     console.log(response.status);
     console.log(response);
