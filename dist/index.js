@@ -32597,13 +32597,6 @@ async function run() {
             return;
         }
         const octokit = github.getOctokit(token);
-        // Check if this event is a pull request
-        const isPullRequest = !!github.context.payload.pull_request;
-        core.info(`Is this a pull request event? ${isPullRequest}`);
-        if (!isPullRequest) {
-            core.info("This action only runs on pull_request events. Exiting.");
-            return;
-        }
         // Optionally, hide token from logs
         core.setSecret(token);
         core.info('--------- postChannelSuccessComment start');
