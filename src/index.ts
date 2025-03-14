@@ -87,8 +87,9 @@ async function run(): Promise<void> {
 
     const md = convertJsonToMarkdownTable(apiResponse.results);
 
-    // Construct the comment message
-    const comment = `### 🚀 Automatic Evaluation Report
+    // Construct the comment message with a hidden marker to identify it later.
+    const commentBody = `<!-- norma-eval-comment -->
+### 🚀 Automatic Evaluation Report
 **Hello ${name},**
   
 📌 **Test Details:**
@@ -97,9 +98,6 @@ async function run(): Promise<void> {
 - **Test Name:** \`${test_name}\`
   
 🔍 **Results:**
-\`\`\`json
-${JSON.stringify(apiResponse, null, 2)}
-\`\`\`
 
 ${md}
 
@@ -111,15 +109,37 @@ ${md}
 
     console.log(formatTableForConsole(apiResponse.results));
 
-    // Post the comment to the PR
-    await octokit.rest.issues.createComment({
+    // Retrieve existing comments on the PR
+    const { data: existingComments } = await octokit.rest.issues.listComments({
       owner,
       repo,
       issue_number: prNumber,
-      body: comment,
     });
 
-    core.info(`✅ Comment posted to PR #${prNumber}`);
+    // Look for our comment using the unique hidden marker
+    const existingComment = existingComments.find((c: any) =>
+      c.body && c.body.includes("<!-- norma-eval-comment -->")
+    );
+
+    if (existingComment) {
+      // Update the existing comment
+      await octokit.rest.issues.updateComment({
+        owner,
+        repo,
+        comment_id: existingComment.id,
+        body: commentBody,
+      });
+      core.info(`✅ Updated existing comment in PR #${prNumber}`);
+    } else {
+      // Create a new comment
+      await octokit.rest.issues.createComment({
+        owner,
+        repo,
+        issue_number: prNumber,
+        body: commentBody,
+      });
+      core.info(`✅ Created new comment in PR #${prNumber}`);
+    }
   } catch (error: any) {
     core.setFailed(`❌ Action failed: ${error.message}`);
   }
@@ -127,12 +147,11 @@ ${md}
 
 function convertJsonToMarkdownTable(jsonData: any): string {
   let markdownOutput = "# Conversation Logs\n\n";
-  markdownOutput += `| ID | Scenario | Content |\n`;
+  markdownOutput += `| Scenario | GPT Score | Mistral Score |\n`;
   markdownOutput += `|----|----------|---------|\n`;
 
-  jsonData.forEach((entry: any, index: number) => {
-    let content = `**Conversation ID**: ${entry["Conversation ID"]}\n\n**Expected Response**: ${entry["Expected Response"]}\n\n**New Conversation Outbound**: ${entry["New Conversation Outbound"]}\n\n**GPT-4 Score**: ${entry["New Conv Evaluation (GPT-4)"]}\n\n**Mistral Score**: ${entry["New Conv Evaluation (Mistral)"]}`;
-    markdownOutput += `| ${index + 1} | ${entry["Scenario"]} | ${content.replace(/\n/g, "<br>")} |\n`;
+  jsonData.forEach((entry: any) => {
+    markdownOutput += `| ${entry["Scenario"]} | ${entry["New Conv Evaluation (GPT-4)"]} | ${entry["New Conv Evaluation (Mistral)"]} |\n`;
   });
 
   return markdownOutput;
@@ -142,7 +161,7 @@ function formatTableForConsole(jsonData: any[]): string {
   if (!jsonData || jsonData.length === 0) return "No results to display.";
 
   const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound", "GPT-4 Score", "Mistral Score"];
-  const columnWidths = headers.map((header, i) => 
+  const columnWidths = headers.map((header, i) =>
     Math.max(header.length, ...jsonData.map(row => (row[headers[i]] ? row[headers[i]].toString().length : 0)))
   );
 
