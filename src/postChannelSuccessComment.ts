@@ -45,7 +45,6 @@ Link to the evaluation report: https://github.com/${context.repo.owner}/${contex
     } else {
       // For push events, derive branch name from context.ref
       const branchName = context.ref.replace('refs/heads/', '');
-      console.log(`No pull_request payload; using branch: ${branchName}`);
 
       // Find open PRs with the current branch as head
       const { data: pullRequests } = await github.rest.pulls.list({
@@ -74,7 +73,6 @@ Link to the evaluation report: https://github.com/${context.repo.owner}/${contex
       repo,
       issue_number: prNumber
     });
-    console.log('Existing comments:', existingComments);
 
     // Look for an existing comment with the marker
     const existingComment = existingComments.find((c: any) =>
