@@ -37356,7 +37356,7 @@ const node_fetch_1 = __importDefault(__nccwpck_require__(4034));
 const postChannelSuccessComment_1 = __nccwpck_require__(3278);
 async function run() {
     try {
-        const token = process.env.GITHUB_TOKEN;
+        const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
         if (!token) {
             core.setFailed("❌ GITHUB_TOKEN is not set.");
             return;

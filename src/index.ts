@@ -5,7 +5,7 @@ import { postChannelSuccessComment } from './postChannelSuccessComment';
 
 async function run(): Promise<void> {
   try {
-    const token = process.env.GITHUB_TOKEN;
+    const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
     if (!token) {
       core.setFailed("❌ GITHUB_TOKEN is not set.");
       return;
