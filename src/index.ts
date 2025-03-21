@@ -88,7 +88,15 @@ async function run(): Promise<void> {
     const commit = process.env.GITHUB_SHA || 'N/A';
 
     // Call the function to post or update the PR comment
-    await postChannelSuccessComment(octokit, github.context, md, commit);
+    await postChannelSuccessComment(
+      octokit, 
+      github.context, 
+      md, 
+      commit,
+      api_host,
+      type,
+      test_name
+    );
 
   } catch (error: any) {
     core.setFailed(`❌ Action failed: ${error.message}`);

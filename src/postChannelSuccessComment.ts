@@ -20,20 +20,30 @@ export async function postChannelSuccessComment(
   github: InstanceType<typeof GitHub>,
   context: Context,
   result: string,
-  commit: string
+  commit: string,
+  api_host: string,
+  type: string,
+  test_name: string
 ): Promise<void> {
   startGroup('Commenting on PR');
 
   try {
     const commentMarker = '<!-- norma-eval-comment -->';
     const commentBody = `${commentMarker}
-### 🚀 Automatic Evaluation Report
-**Result:** ${result}  
-**Commit:** ${commit}
+        ### 🚀 Automatic Evaluation Report
+        - **API Host:** \`${api_host}\`
+        - **Type:** \`${type}\`
+        - **Test Name:** \`${test_name}\`
+        **Result:** ${result}  
 
-Link to the evaluation report: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
 
-<sub>Posted by GitHub Actions Bot</sub>`;
+        <sub>
+        🔍 If you need to make changes, update your branch and rerun the workflow.
+        <br>
+        🔄 _This comment was posted automatically by [Eval Action](https://github.com/www-norma-dev/eval-action)._
+        <br>
+        Posted by GitHub Actions Bot
+    </sub>`;
 
     const { owner, repo } = context.repo;
     let prNumber: number | undefined;

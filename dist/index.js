@@ -37427,7 +37427,7 @@ async function run() {
         // Use the current commit SHA as the commit identifier
         const commit = process.env.GITHUB_SHA || 'N/A';
         // Call the function to post or update the PR comment
-        await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, md, commit);
+        await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, md, commit, api_host, type, test_name);
     }
     catch (error) {
         core.setFailed(`❌ Action failed: ${error.message}`);
@@ -37481,18 +37481,25 @@ const core_1 = __nccwpck_require__(7484);
  * @param result - The evaluation result string.
  * @param commit - The commit SHA or identifier.
  */
-async function postChannelSuccessComment(github, context, result, commit) {
+async function postChannelSuccessComment(github, context, result, commit, api_host, type, test_name) {
     (0, core_1.startGroup)('Commenting on PR');
     try {
         const commentMarker = '<!-- norma-eval-comment -->';
         const commentBody = `${commentMarker}
-### 🚀 Automatic Evaluation Report
-**Result:** ${result}  
-**Commit:** ${commit}
+        ### 🚀 Automatic Evaluation Report
+        - **API Host:** \`${api_host}\`
+        - **Type:** \`${type}\`
+        - **Test Name:** \`${test_name}\`
+        **Result:** ${result}  
 
-Link to the evaluation report: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
 
-<sub>Posted by GitHub Actions Bot</sub>`;
+        <sub>
+        🔍 If you need to make changes, update your branch and rerun the workflow.
+        <br>
+        🔄 _This comment was posted automatically by [Eval Action](https://github.com/www-norma-dev/eval-action)._
+        <br>
+        Posted by GitHub Actions Bot
+    </sub>`;
         const { owner, repo } = context.repo;
         let prNumber;
         // Use the PR number from the payload if available
@@ -37503,7 +37510,6 @@ Link to the evaluation report: https://github.com/${context.repo.owner}/${contex
         else {
             // For push events, derive branch name from context.ref
             const branchName = context.ref.replace('refs/heads/', '');
-            console.log(`No pull_request payload; using branch: ${branchName}`);
             // Find open PRs with the current branch as head
             const { data: pullRequests } = await github.rest.pulls.list({
                 owner,
@@ -37528,7 +37534,6 @@ Link to the evaluation report: https://github.com/${context.repo.owner}/${contex
             repo,
             issue_number: prNumber
         });
-        console.log('Existing comments:', existingComments);
         // Look for an existing comment with the marker
         const existingComment = existingComments.find((c) => c.body && c.body.includes(commentMarker));
         if (existingComment) {
