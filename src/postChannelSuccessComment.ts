@@ -1,18 +1,32 @@
-import { endGroup, startGroup, info } from "@actions/core";
-import type { GitHub } from "@actions/github/lib/utils";
-import { Context } from "@actions/github/lib/context";
+import { endGroup, startGroup, info, error } from '@actions/core';
+import type { GitHub } from '@actions/github/lib/utils';
+import { Context } from '@actions/github/lib/context';
 
+/**
+ * Posts or updates a comment on a pull request with the evaluation report.
+ * Make sure your workflow YAML grants the GITHUB_TOKEN proper permissions:
+ * 
+ * permissions:
+ *   contents: read
+ *   pull-requests: write
+ *   issues: write
+ *
+ * @param github - An instance of Octokit authenticated with GITHUB_TOKEN.
+ * @param context - The GitHub Actions context.
+ * @param result - The evaluation result string.
+ * @param commit - The commit SHA or identifier.
+ */
 export async function postChannelSuccessComment(
   github: InstanceType<typeof GitHub>,
   context: Context,
   result: string,
   commit: string
-) {
-  startGroup("Commenting on PR");
+): Promise<void> {
+  startGroup('Commenting on PR');
 
   try {
-    // Build the comment body with a hidden marker.
-    const commentBody = `<!-- norma-eval-comment -->
+    const commentMarker = '<!-- norma-eval-comment -->';
+    const commentBody = `${commentMarker}
 ### 🚀 Automatic Evaluation Report
 **Result:** ${result}  
 **Commit:** ${commit}
@@ -22,25 +36,25 @@ export async function postChannelSuccessComment(
     const { owner, repo } = context.repo;
     let prNumber: number | undefined;
 
-    // If the payload contains a pull request, use that PR number.
+    // Use the PR number from the payload if available
     if (context.payload.pull_request && context.payload.pull_request.number) {
       prNumber = context.payload.pull_request.number;
       console.log(`Pull request found in payload: #${prNumber}`);
     } else {
-      // Otherwise, determine the branch name.
-      const branchName = context.ref.replace("refs/heads/", "");
+      // For push events, derive branch name from context.ref
+      const branchName = context.ref.replace('refs/heads/', '');
       console.log(`No pull_request payload; using branch: ${branchName}`);
 
-      // Fetch open PRs that have this branch as the head.
+      // Find open PRs with the current branch as head
       const { data: pullRequests } = await github.rest.pulls.list({
         owner,
         repo,
         head: `${owner}:${branchName}`,
-        state: "open",
+        state: 'open'
       });
 
       if (pullRequests.length === 0) {
-        console.log("⚠️ No open PR found for this branch. Skipping comment.");
+        console.log('⚠️ No open PR found for this branch. Skipping comment.');
         return;
       }
       prNumber = pullRequests[0].number;
@@ -48,51 +62,44 @@ export async function postChannelSuccessComment(
     }
 
     if (!prNumber) {
-      console.log("⚠️ No PR number determined. Exiting.");
+      console.log('⚠️ No PR number determined. Exiting.');
       return;
     }
 
-    await github.rest.issues.createComment({
-        owner,
-        repo,
-        issue_number: prNumber,
-        body: commentBody,
-      });
-
-    // Fetch existing comments on the PR.
+    // Retrieve existing comments on the PR
     const { data: existingComments } = await github.rest.issues.listComments({
       owner,
       repo,
-      issue_number: prNumber,
+      issue_number: prNumber
     });
-    console.log("Existing comments:", existingComments);
+    console.log('Existing comments:', existingComments);
 
-    // Look for a comment with our hidden marker.
+    // Look for an existing comment with the marker
     const existingComment = existingComments.find((c: any) =>
-      c.body && c.body.includes("<!-- norma-eval-comment -->")
+      c.body && c.body.includes(commentMarker)
     );
 
     if (existingComment) {
-      // Update the existing comment.
+      // Update the existing comment
       await github.rest.issues.updateComment({
         owner,
         repo,
         comment_id: existingComment.id,
-        body: commentBody,
+        body: commentBody
       });
       info(`✅ Updated existing comment in PR #${prNumber}`);
     } else {
-      // Create a new comment.
+      // Create a new comment if no matching comment was found
       await github.rest.issues.createComment({
         owner,
         repo,
         issue_number: prNumber,
-        body: commentBody,
+        body: commentBody
       });
       info(`✅ Created new comment in PR #${prNumber}`);
     }
   } catch (e: any) {
-    console.log(`Error posting/updating comment: ${e.message}`);
+    error(`Error posting/updating comment: ${e.message}`);
   } finally {
     endGroup();
   }
