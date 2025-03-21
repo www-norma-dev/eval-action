@@ -37434,7 +37434,7 @@ async function run() {
     }
 }
 function convertJsonToMarkdownTable(jsonData) {
-    let markdownOutput = "# Conversation Logs\n\n";
+    let markdownOutput = "Conversation Logs\n\n";
     markdownOutput += `| Scenario | GPT Score | Mistral Score |\n`;
     markdownOutput += `|----|----------|---------|\n`;
     jsonData.forEach((entry) => {
