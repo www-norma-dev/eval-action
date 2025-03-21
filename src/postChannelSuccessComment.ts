@@ -31,6 +31,8 @@ export async function postChannelSuccessComment(
 **Result:** ${result}  
 **Commit:** ${commit}
 
+Link to the evaluation report: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+
 <sub>Posted by GitHub Actions Bot</sub>`;
 
     const { owner, repo } = context.repo;
