@@ -37486,18 +37486,16 @@ async function postChannelSuccessComment(github, context, result, commit, api_ho
     try {
         const commentMarker = '<!-- norma-eval-comment -->';
         const commentBody = `${commentMarker}
-    ### 🚀 Automatic Evaluation Report
-    
-    - **API Host:** \`${api_host}\`
-    - **Type:** \`${type}\`
-    - **Test Name:** \`${test_name}\`
-    - **Result:** ${result}  
-    
-    <sub>
-    🔍 If you need to make changes, update your branch and rerun the workflow.  
-    🔄 _This comment was posted automatically by [Eval Action](https://github.com/www-norma-dev/eval-action)._  
-    Posted by GitHub Actions Bot
-    </sub>`;
+### 🚀 Automatic Evaluation Report
+- **API Host:** \`${api_host}\`
+- **Type:** \`${type}\`
+- **Test Name:** \`${test_name}\`
+**Result:** ${result}  
+
+<sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
+
+<sub>🔄 _This comment was posted automatically by [Eval Action](https://github.com/www-norma-dev/eval-action)._<sub/>
+`;
         const { owner, repo } = context.repo;
         let prNumber;
         // Use the PR number from the payload if available
