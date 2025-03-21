@@ -30,20 +30,19 @@ export async function postChannelSuccessComment(
   try {
     const commentMarker = '<!-- norma-eval-comment -->';
     const commentBody = `${commentMarker}
-        ### 🚀 Automatic Evaluation Report
-        - **API Host:** \`${api_host}\`
-        - **Type:** \`${type}\`
-        - **Test Name:** \`${test_name}\`
-        **Result:** ${result}  
-
-
-        <sub>
-        🔍 If you need to make changes, update your branch and rerun the workflow.
-        <br>
-        🔄 _This comment was posted automatically by [Eval Action](https://github.com/www-norma-dev/eval-action)._
-        <br>
-        Posted by GitHub Actions Bot
+    ### 🚀 Automatic Evaluation Report
+    
+    - **API Host:** \`${api_host}\`
+    - **Type:** \`${type}\`
+    - **Test Name:** \`${test_name}\`
+    - **Result:** ${result}  
+    
+    <sub>
+    🔍 If you need to make changes, update your branch and rerun the workflow.  
+    🔄 _This comment was posted automatically by [Eval Action](https://github.com/www-norma-dev/eval-action)._  
+    Posted by GitHub Actions Bot
     </sub>`;
+    
 
     const { owner, repo } = context.repo;
     let prNumber: number | undefined;
