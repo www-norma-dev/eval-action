@@ -37353,22 +37353,22 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const node_fetch_1 = __importDefault(__nccwpck_require__(4034));
+const postChannelSuccessComment_1 = __nccwpck_require__(3278);
 async function run() {
     try {
-        const token = process.env.GITHUB_TOKEN;
+        const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
         if (!token) {
             core.setFailed("❌ GITHUB_TOKEN is not set.");
             return;
         }
         const octokit = github.getOctokit(token);
         const { owner, repo } = github.context.repo;
-        // Extract branch name from the pull_request payload if available,
-        // otherwise fallback to removing "refs/heads/" from the ref.
+        // Determine branch name (from pull_request payload if available)
         const branchName = github.context.payload.pull_request
             ? github.context.payload.pull_request.head.ref
             : github.context.ref.replace("refs/heads/", "");
         console.log(`📌 Current branch: ${branchName}`);
-        // Fetch open PRs that have this branch as the head
+        // Fetch open PRs with this branch as head
         const { data: pullRequests } = await octokit.rest.pulls.list({
             owner,
             repo,
@@ -37379,8 +37379,6 @@ async function run() {
             console.log("⚠️ No open PR found for this branch. Skipping comment.");
             return;
         }
-        const prNumber = pullRequests[0].number;
-        console.log(`✅ Found open PR #${prNumber}`);
         // Retrieve inputs from action.yml
         const name = core.getInput("who-to-greet");
         const api_host = core.getInput("api_host");
@@ -37388,7 +37386,7 @@ async function run() {
         const type = core.getInput("type");
         const test_name = core.getInput("test_name");
         const scenarios = core.getInput("scenarios");
-        // Try parsing `scenarios` if it's a JSON string
+        // Try parsing scenarios from JSON
         let parsedScenarios;
         try {
             parsedScenarios = JSON.parse(scenarios);
@@ -37416,71 +37414,27 @@ async function run() {
         });
         console.log('---------- RESPONSE ---------');
         console.log(response.status);
-        console.log(response);
         if (!response.ok) {
             const errorText = await response.text();
             core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
             return;
         }
-        // Parse response JSON
         const apiResponse = await response.json();
         console.log("✅ API Response Received:", apiResponse);
+        // Convert the API response to a markdown table
         const md = convertJsonToMarkdownTable(apiResponse.results);
-        // Construct the comment message with a hidden marker to identify it later.
-        const commentBody = `<!-- norma-eval-comment -->
-### 🚀 Automatic Evaluation Report
-**Hello ${name},**
-  
-📌 **Test Details:**
-- **API Host:** \`${api_host}\`
-- **Type:** \`${type}\`
-- **Test Name:** \`${test_name}\`
-  
-🔍 **Results:**
-
-${md}
-
----
-
-🔍 If you need to make changes, update your branch and rerun the workflow.
-
-🔄 _[Eval Action](https://eval.norma.dev/)._`;
         console.log(formatTableForConsole(apiResponse.results));
-        // Retrieve existing comments on the PR
-        const { data: existingComments } = await octokit.rest.issues.listComments({
-            owner,
-            repo,
-            issue_number: prNumber,
-        });
-        // Look for our comment using the unique hidden marker
-        const existingComment = existingComments.find((c) => c.body && c.body.includes("<!-- norma-eval-comment -->"));
-        if (existingComment) {
-            // Update the existing comment
-            await octokit.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existingComment.id,
-                body: commentBody,
-            });
-            core.info(`✅ Updated existing comment in PR #${prNumber}`);
-        }
-        else {
-            // Create a new comment
-            await octokit.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: prNumber,
-                body: commentBody,
-            });
-            core.info(`✅ Created new comment in PR #${prNumber}`);
-        }
+        // Use the current commit SHA as the commit identifier
+        const commit = process.env.GITHUB_SHA || 'N/A';
+        // Call the function to post or update the PR comment
+        await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, md, commit, api_host, type, test_name);
     }
     catch (error) {
         core.setFailed(`❌ Action failed: ${error.message}`);
     }
 }
 function convertJsonToMarkdownTable(jsonData) {
-    let markdownOutput = "# Conversation Logs\n\n";
+    let markdownOutput = "Conversation Logs\n\n";
     markdownOutput += `| Scenario | GPT Score | Mistral Score |\n`;
     markdownOutput += `|----|----------|---------|\n`;
     jsonData.forEach((entry) => {
@@ -37501,6 +37455,112 @@ function formatTableForConsole(jsonData) {
     return table;
 }
 run();
+
+
+/***/ }),
+
+/***/ 3278:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.postChannelSuccessComment = void 0;
+const core_1 = __nccwpck_require__(7484);
+/**
+ * Posts or updates a comment on a pull request with the evaluation report.
+ * Make sure your workflow YAML grants the GITHUB_TOKEN proper permissions:
+ *
+ * permissions:
+ *   contents: read
+ *   pull-requests: write
+ *   issues: write
+ *
+ * @param github - An instance of Octokit authenticated with GITHUB_TOKEN.
+ * @param context - The GitHub Actions context.
+ * @param result - The evaluation result string.
+ * @param commit - The commit SHA or identifier.
+ */
+async function postChannelSuccessComment(github, context, result, commit, api_host, type, test_name) {
+    (0, core_1.startGroup)('Commenting on PR');
+    try {
+        const commentMarker = '<!-- norma-eval-comment -->';
+        const commentBody = `${commentMarker}
+### 🚀 Automatic Evaluation Report
+- **API Host:** \`${api_host}\`
+- **Type:** \`${type}\`
+- **Test Name:** \`${test_name}\`
+**Result:** ${result}  
+
+<sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
+
+<sub>🔄 _This comment was posted automatically by [Eval Action](https://github.com/www-norma-dev/eval-action)._<sub/>
+`;
+        const { owner, repo } = context.repo;
+        let prNumber;
+        // Use the PR number from the payload if available
+        if (context.payload.pull_request && context.payload.pull_request.number) {
+            prNumber = context.payload.pull_request.number;
+            console.log(`Pull request found in payload: #${prNumber}`);
+        }
+        else {
+            // For push events, derive branch name from context.ref
+            const branchName = context.ref.replace('refs/heads/', '');
+            // Find open PRs with the current branch as head
+            const { data: pullRequests } = await github.rest.pulls.list({
+                owner,
+                repo,
+                head: `${owner}:${branchName}`,
+                state: 'open'
+            });
+            if (pullRequests.length === 0) {
+                console.log('⚠️ No open PR found for this branch. Skipping comment.');
+                return;
+            }
+            prNumber = pullRequests[0].number;
+            console.log(`Found open PR #${prNumber} for branch ${branchName}`);
+        }
+        if (!prNumber) {
+            console.log('⚠️ No PR number determined. Exiting.');
+            return;
+        }
+        // Retrieve existing comments on the PR
+        const { data: existingComments } = await github.rest.issues.listComments({
+            owner,
+            repo,
+            issue_number: prNumber
+        });
+        // Look for an existing comment with the marker
+        const existingComment = existingComments.find((c) => c.body && c.body.includes(commentMarker));
+        if (existingComment) {
+            // Update the existing comment
+            await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body: commentBody
+            });
+            (0, core_1.info)(`✅ Updated existing comment in PR #${prNumber}`);
+        }
+        else {
+            // Create a new comment if no matching comment was found
+            await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: commentBody
+            });
+            (0, core_1.info)(`✅ Created new comment in PR #${prNumber}`);
+        }
+    }
+    catch (e) {
+        (0, core_1.error)(`Error posting/updating comment: ${e.message}`);
+    }
+    finally {
+        (0, core_1.endGroup)();
+    }
+}
+exports.postChannelSuccessComment = postChannelSuccessComment;
 
 
 /***/ }),

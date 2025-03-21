@@ -1,10 +1,11 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import fetch from 'node-fetch';
+import { postChannelSuccessComment } from './postChannelSuccessComment';
 
 async function run(): Promise<void> {
   try {
-    const token = process.env.GITHUB_TOKEN;
+    const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
     if (!token) {
       core.setFailed("❌ GITHUB_TOKEN is not set.");
       return;
@@ -13,14 +14,13 @@ async function run(): Promise<void> {
     const octokit = github.getOctokit(token);
     const { owner, repo } = github.context.repo;
 
-    // Extract branch name from the pull_request payload if available,
-    // otherwise fallback to removing "refs/heads/" from the ref.
+    // Determine branch name (from pull_request payload if available)
     const branchName = github.context.payload.pull_request
       ? github.context.payload.pull_request.head.ref
       : github.context.ref.replace("refs/heads/", "");
     console.log(`📌 Current branch: ${branchName}`);
 
-    // Fetch open PRs that have this branch as the head
+    // Fetch open PRs with this branch as head
     const { data: pullRequests } = await octokit.rest.pulls.list({
       owner,
       repo,
@@ -32,10 +32,7 @@ async function run(): Promise<void> {
       console.log("⚠️ No open PR found for this branch. Skipping comment.");
       return;
     }
-
-    const prNumber = pullRequests[0].number;
-    console.log(`✅ Found open PR #${prNumber}`);
-
+    
     // Retrieve inputs from action.yml
     const name: string = core.getInput("who-to-greet");
     const api_host: string = core.getInput("api_host");
@@ -44,7 +41,7 @@ async function run(): Promise<void> {
     const test_name: string = core.getInput("test_name");
     const scenarios: string = core.getInput("scenarios");
 
-    // Try parsing `scenarios` if it's a JSON string
+    // Try parsing scenarios from JSON
     let parsedScenarios;
     try {
       parsedScenarios = JSON.parse(scenarios);
@@ -74,79 +71,40 @@ async function run(): Promise<void> {
     
     console.log('---------- RESPONSE ---------');
     console.log(response.status);
-    console.log(response);
     if (!response.ok) {
       const errorText = await response.text();
       core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
       return;
     }
 
-    // Parse response JSON
     const apiResponse: any = await response.json();
     console.log("✅ API Response Received:", apiResponse);
 
+    // Convert the API response to a markdown table
     const md = convertJsonToMarkdownTable(apiResponse.results);
-
-    // Construct the comment message with a hidden marker to identify it later.
-    const commentBody = `<!-- norma-eval-comment -->
-### 🚀 Automatic Evaluation Report
-**Hello ${name},**
-  
-📌 **Test Details:**
-- **API Host:** \`${api_host}\`
-- **Type:** \`${type}\`
-- **Test Name:** \`${test_name}\`
-  
-🔍 **Results:**
-
-${md}
-
----
-
-🔍 If you need to make changes, update your branch and rerun the workflow.
-
-🔄 _[Eval Action](https://eval.norma.dev/)._`;
-
     console.log(formatTableForConsole(apiResponse.results));
 
-    // Retrieve existing comments on the PR
-    const { data: existingComments } = await octokit.rest.issues.listComments({
-      owner,
-      repo,
-      issue_number: prNumber,
-    });
+    // Use the current commit SHA as the commit identifier
+    const commit = process.env.GITHUB_SHA || 'N/A';
 
-    // Look for our comment using the unique hidden marker
-    const existingComment = existingComments.find((c: any) =>
-      c.body && c.body.includes("<!-- norma-eval-comment -->")
+    // Call the function to post or update the PR comment
+    await postChannelSuccessComment(
+      octokit, 
+      github.context, 
+      md, 
+      commit,
+      api_host,
+      type,
+      test_name
     );
 
-    if (existingComment) {
-      // Update the existing comment
-      await octokit.rest.issues.updateComment({
-        owner,
-        repo,
-        comment_id: existingComment.id,
-        body: commentBody,
-      });
-      core.info(`✅ Updated existing comment in PR #${prNumber}`);
-    } else {
-      // Create a new comment
-      await octokit.rest.issues.createComment({
-        owner,
-        repo,
-        issue_number: prNumber,
-        body: commentBody,
-      });
-      core.info(`✅ Created new comment in PR #${prNumber}`);
-    }
   } catch (error: any) {
     core.setFailed(`❌ Action failed: ${error.message}`);
   }
 }
 
 function convertJsonToMarkdownTable(jsonData: any): string {
-  let markdownOutput = "# Conversation Logs\n\n";
+  let markdownOutput = "Conversation Logs\n\n";
   markdownOutput += `| Scenario | GPT Score | Mistral Score |\n`;
   markdownOutput += `|----|----------|---------|\n`;
 
