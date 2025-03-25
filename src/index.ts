@@ -83,8 +83,8 @@ async function run(): Promise<void> {
     console.log("📋 Response.results:", apiResponse.results);
 
     // Convert the API response to a markdown table
-    const md = convertJsonToMarkdownTable(apiResponse.results);
-    console.log(formatTableForConsole(apiResponse.results));
+    const md = convertJsonToMarkdownTable(apiResponse);
+    console.log(formatTableForConsole(apiResponse));    
 
     // Use the current commit SHA as the commit identifier
     const commit = process.env.GITHUB_SHA || 'N/A';

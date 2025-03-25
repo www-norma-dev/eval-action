@@ -37423,8 +37423,8 @@ async function run() {
         console.log("📦 Raw API response before formatting:", apiResponse);
         console.log("📋 Response.results:", apiResponse.results);
         // Convert the API response to a markdown table
-        const md = convertJsonToMarkdownTable(apiResponse.results);
-        console.log(formatTableForConsole(apiResponse.results));
+        const md = convertJsonToMarkdownTable(apiResponse);
+        console.log(formatTableForConsole(apiResponse));
         // Use the current commit SHA as the commit identifier
         const commit = process.env.GITHUB_SHA || 'N/A';
         // Call the function to post or update the PR comment
