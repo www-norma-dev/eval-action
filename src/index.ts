@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import fetch from 'node-fetch';
 import { postChannelSuccessComment } from './postChannelSuccessComment';
+import { endGroup, startGroup } from '@actions/core';
 
 async function run(): Promise<void> {
   try {
@@ -50,7 +51,6 @@ async function run(): Promise<void> {
     }
     
     console.log(`🔄 Sending API request to: ${api_host}`);
-    console.log("Parsed scenarios:", parsedScenarios);
     
     // Make the API POST request
     const response = await fetch("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
@@ -69,7 +69,6 @@ async function run(): Promise<void> {
     });
     
     console.log('---------- RESPONSE ---------');
-    console.log(response.status);
     if (!response.ok) {
       const errorText = await response.text();
       core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
@@ -77,10 +76,9 @@ async function run(): Promise<void> {
     }
 
     const apiResponse: any = await response.json();
+    startGroup('Commenting on PR');
     console.log("✅ API Response Received:", apiResponse);
-
-    console.log("📦 Raw API response before formatting:", apiResponse);
-    console.log("📋 Response.results:", apiResponse.results);
+    endGroup();
 
     // Convert the API response to a markdown table
     const md = convertJsonToMarkdownTable(apiResponse);
@@ -129,7 +127,7 @@ function formatTableForConsole(jsonData: any[]): string {
     return "No results to display.";
   }
 
-  const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound", "GPT-4 Score", "Mistral Score"];
+  const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound Metadata", "New Conv Evaluation (GPT-4)", "New Conv Evaluation (Mistral)"];
   const columnWidths = headers.map((header, i) =>
     Math.max(header.length, ...jsonData.map(row => (row[headers[i]] ? row[headers[i]].toString().length : 0)))
   );

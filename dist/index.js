@@ -37354,6 +37354,7 @@ const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const node_fetch_1 = __importDefault(__nccwpck_require__(4034));
 const postChannelSuccessComment_1 = __nccwpck_require__(3278);
+const core_1 = __nccwpck_require__(7484);
 async function run() {
     try {
         const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
@@ -37395,7 +37396,6 @@ async function run() {
             parsedScenarios = {}; // Fallback to empty object
         }
         console.log(`🔄 Sending API request to: ${api_host}`);
-        console.log("Parsed scenarios:", parsedScenarios);
         // Make the API POST request
         const response = await (0, node_fetch_1.default)("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
             method: "POST",
@@ -37412,16 +37412,15 @@ async function run() {
             })
         });
         console.log('---------- RESPONSE ---------');
-        console.log(response.status);
         if (!response.ok) {
             const errorText = await response.text();
             core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
             return;
         }
         const apiResponse = await response.json();
+        (0, core_1.startGroup)('Commenting on PR');
         console.log("✅ API Response Received:", apiResponse);
-        console.log("📦 Raw API response before formatting:", apiResponse);
-        console.log("📋 Response.results:", apiResponse.results);
+        (0, core_1.endGroup)();
         // Convert the API response to a markdown table
         const md = convertJsonToMarkdownTable(apiResponse);
         console.log(formatTableForConsole(apiResponse));
@@ -37453,7 +37452,7 @@ function formatTableForConsole(jsonData) {
         console.warn("⚠️ formatTableForConsole: No valid results to format:", jsonData);
         return "No results to display.";
     }
-    const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound", "GPT-4 Score", "Mistral Score"];
+    const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound Metadata", "New Conv Evaluation (GPT-4)", "New Conv Evaluation (Mistral)"];
     const columnWidths = headers.map((header, i) => Math.max(header.length, ...jsonData.map(row => (row[headers[i]] ? row[headers[i]].toString().length : 0))));
     let table = headers.map((header, i) => header.padEnd(columnWidths[i])).join(" | ") + "\n";
     table += columnWidths.map(width => "-".repeat(width)).join("-|-") + "\n";
