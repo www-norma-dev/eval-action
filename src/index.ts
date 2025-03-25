@@ -30,7 +30,6 @@ async function run(): Promise<void> {
 
     if (pullRequests.length === 0) {
       console.log("⚠️ No open PR found for this branch. Skipping comment.");
-      return;
     }
     
     // Retrieve inputs from action.yml

@@ -37377,7 +37377,6 @@ async function run() {
         });
         if (pullRequests.length === 0) {
             console.log("⚠️ No open PR found for this branch. Skipping comment.");
-            return;
         }
         // Retrieve inputs from action.yml
         const name = core.getInput("who-to-greet");
