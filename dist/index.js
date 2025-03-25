@@ -37420,6 +37420,8 @@ async function run() {
         }
         const apiResponse = await response.json();
         console.log("✅ API Response Received:", apiResponse);
+        console.log("📦 Raw API response before formatting:", apiResponse);
+        console.log("📋 Response.results:", apiResponse.results);
         // Convert the API response to a markdown table
         const md = convertJsonToMarkdownTable(apiResponse.results);
         console.log(formatTableForConsole(apiResponse.results));
@@ -37429,10 +37431,15 @@ async function run() {
         await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, md, commit, api_host, type, test_name);
     }
     catch (error) {
+        console.error(`❌ Error : ${error}`);
         core.setFailed(`❌ Action failed: ${error.message}`);
     }
 }
 function convertJsonToMarkdownTable(jsonData) {
+    if (!Array.isArray(jsonData)) {
+        console.error("❌ convertJsonToMarkdownTable: Expected array but got:", jsonData);
+        return "Invalid data format received for markdown conversion.";
+    }
     let markdownOutput = "Conversation Logs\n\n";
     markdownOutput += `| Scenario | GPT Score | Mistral Score |\n`;
     markdownOutput += `|----|----------|---------|\n`;
@@ -37442,8 +37449,10 @@ function convertJsonToMarkdownTable(jsonData) {
     return markdownOutput;
 }
 function formatTableForConsole(jsonData) {
-    if (!jsonData || jsonData.length === 0)
+    if (!Array.isArray(jsonData) || jsonData.length === 0) {
+        console.warn("⚠️ formatTableForConsole: No valid results to format:", jsonData);
         return "No results to display.";
+    }
     const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound", "GPT-4 Score", "Mistral Score"];
     const columnWidths = headers.map((header, i) => Math.max(header.length, ...jsonData.map(row => (row[headers[i]] ? row[headers[i]].toString().length : 0))));
     let table = headers.map((header, i) => header.padEnd(columnWidths[i])).join(" | ") + "\n";

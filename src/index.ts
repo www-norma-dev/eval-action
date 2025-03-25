@@ -79,6 +79,9 @@ async function run(): Promise<void> {
     const apiResponse: any = await response.json();
     console.log("✅ API Response Received:", apiResponse);
 
+    console.log("📦 Raw API response before formatting:", apiResponse);
+    console.log("📋 Response.results:", apiResponse.results);
+
     // Convert the API response to a markdown table
     const md = convertJsonToMarkdownTable(apiResponse.results);
     console.log(formatTableForConsole(apiResponse.results));
@@ -98,11 +101,17 @@ async function run(): Promise<void> {
     );
 
   } catch (error: any) {
+    console.error(`❌ Error : ${error}`);
     core.setFailed(`❌ Action failed: ${error.message}`);
   }
 }
 
 function convertJsonToMarkdownTable(jsonData: any): string {
+  if (!Array.isArray(jsonData)) {
+    console.error("❌ convertJsonToMarkdownTable: Expected array but got:", jsonData);
+    return "Invalid data format received for markdown conversion.";
+  }
+
   let markdownOutput = "Conversation Logs\n\n";
   markdownOutput += `| Scenario | GPT Score | Mistral Score |\n`;
   markdownOutput += `|----|----------|---------|\n`;
@@ -115,7 +124,10 @@ function convertJsonToMarkdownTable(jsonData: any): string {
 }
 
 function formatTableForConsole(jsonData: any[]): string {
-  if (!jsonData || jsonData.length === 0) return "No results to display.";
+  if (!Array.isArray(jsonData) || jsonData.length === 0) {
+    console.warn("⚠️ formatTableForConsole: No valid results to format:", jsonData);
+    return "No results to display.";
+  }
 
   const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound", "GPT-4 Score", "Mistral Score"];
   const columnWidths = headers.map((header, i) =>
