@@ -3,6 +3,9 @@ import * as github from '@actions/github';
 import fetch from 'node-fetch';
 import { postChannelSuccessComment } from './postChannelSuccessComment';
 import { endGroup, startGroup } from '@actions/core';
+import ora from 'ora';
+import https from 'https';
+import { AbortController } from 'node-abort-controller';
 
 async function run(): Promise<void> {
   try {
@@ -52,7 +55,15 @@ async function run(): Promise<void> {
 
     console.log(`🔄 Sending API request to: ${api_host}`);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, 10 * 60 * 1000); // Set timeout for 10 minutes
+
+    const spinner = ora('Waiting for API response...').start();
+
     // Start a heartbeat that logs every minute
+    const agent = new https.Agent({ keepAlive: true });
     const heartbeatInterval = setInterval(() => {
       console.log("⏱️ Still waiting for API response...");
     }, 60000); // Log every 60 seconds
@@ -62,6 +73,7 @@ async function run(): Promise<void> {
       // Make the API POST request
       response = await fetch("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
         method: "POST",
+        agent,
         headers: {
           "Content-Type": "application/json"
         },
@@ -73,18 +85,26 @@ async function run(): Promise<void> {
           type,
           test_name,
           scenarios: parsedScenarios
-        })
+        }),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
       clearInterval(heartbeatInterval);
 
       console.log('---------- RESPONSE ---------');
       if (!response.ok) {
         const errorText = await response.text();
         core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
+        spinner.fail(`API request failed with status ${response.status}`);
         return;
       }
+
+      spinner.succeed('API response received.');
+
     } catch (error: any) {
+      clearTimeout(timeout);
       clearInterval(heartbeatInterval);
+      spinner.fail(`Action failed: ${error.message}`);
       core.setFailed(`❌ API request failed: ${error.message}`);
       return;
 
