@@ -62,6 +62,7 @@ async function run(): Promise<void> {
         name,
         apiHost: api_host,
         x_api_key,
+        withAi: false,
         type,
         test_name,
         scenarios: parsedScenarios

@@ -37406,6 +37406,7 @@ async function run() {
                 name,
                 apiHost: api_host,
                 x_api_key,
+                withAi: false,
                 type,
                 test_name,
                 scenarios: parsedScenarios
@@ -37418,7 +37419,7 @@ async function run() {
             return;
         }
         const apiResponse = await response.json();
-        (0, core_1.startGroup)('Commenting on PR');
+        (0, core_1.startGroup)('API Response');
         console.log("✅ API Response Received:", apiResponse);
         (0, core_1.endGroup)();
         // Convert the API response to a markdown table
