@@ -76,7 +76,7 @@ async function run(): Promise<void> {
     }
 
     const apiResponse: any = await response.json();
-    startGroup('Commenting on PR');
+    startGroup('API Response');
     console.log("✅ API Response Received:", apiResponse);
     endGroup();
 
