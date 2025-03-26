@@ -32,7 +32,7 @@ async function run(): Promise<void> {
     if (pullRequests.length === 0) {
       console.log("⚠️ No open PR found for this branch. Skipping comment.");
     }
-    
+
     // Retrieve inputs from action.yml
     const name: string = core.getInput("who-to-greet");
     const api_host: string = core.getInput("api_host");
@@ -49,32 +49,48 @@ async function run(): Promise<void> {
       console.error("❌ Error parsing `scenarios`: Invalid JSON format.", error);
       parsedScenarios = {}; // Fallback to empty object
     }
-    
+
     console.log(`🔄 Sending API request to: ${api_host}`);
-    
-    // Make the API POST request
-    const response = await fetch("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name,
-        apiHost: api_host,
-        x_api_key,
-        withAi: false,
-        type,
-        test_name,
-        scenarios: parsedScenarios
-      })
-    });
-    
-    console.log('---------- RESPONSE ---------');
-    if (!response.ok) {
-      const errorText = await response.text();
-      core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
+
+    // Start a heartbeat that logs every minute
+    const heartbeatInterval = setInterval(() => {
+      console.log("⏱️ Still waiting for API response...");
+    }, 60000); // Log every 60 seconds
+    let response;
+    try {
+
+      // Make the API POST request
+      response = await fetch("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name,
+          apiHost: api_host,
+          x_api_key,
+          withAi: false,
+          type,
+          test_name,
+          scenarios: parsedScenarios
+        })
+      });
+      clearInterval(heartbeatInterval);
+
+      console.log('---------- RESPONSE ---------');
+      if (!response.ok) {
+        const errorText = await response.text();
+        core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
+        return;
+      }
+    } catch (error: any) {
+      clearInterval(heartbeatInterval);
+      core.setFailed(`❌ API request failed: ${error.message}`);
       return;
+
     }
+
+
 
     const apiResponse: any = await response.json();
     startGroup('API Response');
@@ -83,16 +99,16 @@ async function run(): Promise<void> {
 
     // Convert the API response to a markdown table
     const md = convertJsonToMarkdownTable(apiResponse);
-    console.log(formatTableForConsole(apiResponse));    
+    console.log(formatTableForConsole(apiResponse));
 
     // Use the current commit SHA as the commit identifier
     const commit = process.env.GITHUB_SHA || 'N/A';
 
     // Call the function to post or update the PR comment
     await postChannelSuccessComment(
-      octokit, 
-      github.context, 
-      md, 
+      octokit,
+      github.context,
+      md,
       commit,
       api_host,
       type,

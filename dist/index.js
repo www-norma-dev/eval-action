@@ -37396,26 +37396,39 @@ async function run() {
             parsedScenarios = {}; // Fallback to empty object
         }
         console.log(`🔄 Sending API request to: ${api_host}`);
-        // Make the API POST request
-        const response = await (0, node_fetch_1.default)("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                name,
-                apiHost: api_host,
-                x_api_key,
-                withAi: false,
-                type,
-                test_name,
-                scenarios: parsedScenarios
-            })
-        });
-        console.log('---------- RESPONSE ---------');
-        if (!response.ok) {
-            const errorText = await response.text();
-            core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
+        // Start a heartbeat that logs every minute
+        const heartbeatInterval = setInterval(() => {
+            console.log("⏱️ Still waiting for API response...");
+        }, 60000); // Log every 60 seconds
+        let response;
+        try {
+            // Make the API POST request
+            response = await (0, node_fetch_1.default)("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name,
+                    apiHost: api_host,
+                    x_api_key,
+                    withAi: false,
+                    type,
+                    test_name,
+                    scenarios: parsedScenarios
+                })
+            });
+            clearInterval(heartbeatInterval);
+            console.log('---------- RESPONSE ---------');
+            if (!response.ok) {
+                const errorText = await response.text();
+                core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
+                return;
+            }
+        }
+        catch (error) {
+            clearInterval(heartbeatInterval);
+            core.setFailed(`❌ API request failed: ${error.message}`);
             return;
         }
         const apiResponse = await response.json();
