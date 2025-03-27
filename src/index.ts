@@ -6,9 +6,12 @@ import { endGroup, startGroup } from '@actions/core';
 import ora from 'ora';
 import https from 'https';
 import { AbortController } from 'node-abort-controller';
+import { readData } from './firebase/firebaseSetup';
 
 async function run(): Promise<void> {
   try {
+
+    readData();
     const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
     if (!token) {
       core.setFailed("❌ GITHUB_TOKEN is not set.");
@@ -180,3 +183,4 @@ function formatTableForConsole(jsonData: any[]): string {
 }
 
 run();
+
