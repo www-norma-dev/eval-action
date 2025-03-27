@@ -6,6 +6,7 @@ import { endGroup, startGroup } from '@actions/core';
 import ora from 'ora';
 import https from 'https';
 import { AbortController } from 'node-abort-controller';
+import axios from 'axios';
 
 async function run(): Promise<void> {
   try {
@@ -71,30 +72,32 @@ async function run(): Promise<void> {
     try {
 
       // Make the API POST request
-      response = await fetch("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
-        method: "POST",
-        agent,
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
+      response = await axios.post(
+        "https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0",
+        {
           name,
           apiHost: api_host,
           x_api_key,
           withAi: false,
           type,
           test_name,
-          scenarios: parsedScenarios
-        }),
-        signal: controller.signal
-      });
+          scenarios: parsedScenarios,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          httpsAgent: agent,
+          timeout: 20 * 60 * 1000, // 10 minutes timeout
+          signal: controller.signal,
+        }
+      );
       clearTimeout(timeout);
       clearInterval(heartbeatInterval);
 
       console.log('---------- RESPONSE ---------');
-      if (!response.ok) {
-        const errorText = await response.text();
-        core.setFailed(`❌ API request failed with status ${response.status}: ${errorText}`);
+      if (response.status < 200 || response.status >= 300) {
+        core.setFailed(`❌ API request failed with status ${response.status}: ${response.statusText}`);
         spinner.fail(`API request failed with status ${response.status}`);
         return;
       }
@@ -112,7 +115,7 @@ async function run(): Promise<void> {
 
 
 
-    const apiResponse: any = await response.json();
+    const apiResponse: any = response.data;
     startGroup('API Response');
     console.log("✅ API Response Received:", apiResponse);
     endGroup();
