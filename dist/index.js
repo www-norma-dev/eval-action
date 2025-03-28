@@ -37345,7 +37345,8 @@ async function run() {
         let response;
         try {
             // Make the API POST request
-            response = await axios_1.default.post("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", {
+            response = await axios_1.default.post("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", // backend NESTJ
+            {
                 name,
                 apiHost: api_host,
                 x_api_key,
@@ -37401,10 +37402,10 @@ function convertJsonToMarkdownTable(jsonData) {
         return "Invalid data format received for markdown conversion.";
     }
     let markdownOutput = "Conversation Logs\n\n";
-    markdownOutput += `| Scenario | GPT Score | Mistral Score |\n`;
-    markdownOutput += `|----|----------|---------|\n`;
+    markdownOutput += `| Scenario | GPT Score | Mistral Score | Metadata score|\n`;
+    markdownOutput += `|----|----------|---------|---------------|\n`;
     jsonData.forEach((entry) => {
-        markdownOutput += `| ${entry["Scenario"]} | ${entry["New Conv Evaluation (GPT-4)"]} | ${entry["New Conv Evaluation (Mistral)"]} |\n`;
+        markdownOutput += `| ${entry["Scenario"]} | ${entry["New Conv Evaluation (GPT-4)"]} | ${entry["New Conv Evaluation (Mistral)"]} | ${entry["Metadata Extraction score"]}|\n`;
     });
     return markdownOutput;
 }
@@ -37413,7 +37414,7 @@ function formatTableForConsole(jsonData) {
         console.warn("⚠️ formatTableForConsole: No valid results to format:", jsonData);
         return "No results to display.";
     }
-    const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound Metadata", "New Conv Evaluation (GPT-4)", "New Conv Evaluation (Mistral)"];
+    const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound Metadata", "New Conv Evaluation (GPT-4)", "New Conv Evaluation (Mistral)", "Metadata Extraction score"];
     const columnWidths = headers.map((header, i) => Math.max(header.length, ...jsonData.map(row => (row[headers[i]] ? row[headers[i]].toString().length : 0))));
     let table = headers.map((header, i) => header.padEnd(columnWidths[i])).join(" | ") + "\n";
     table += columnWidths.map(width => "-".repeat(width)).join("-|-") + "\n";
