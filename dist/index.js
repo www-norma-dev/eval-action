@@ -37345,8 +37345,7 @@ async function run() {
         let response;
         try {
             // Make the API POST request
-            response = await axios_1.default.post("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", // backend NESTJ
-            {
+            response = await axios_1.default.post("https://eval-norma--norma-dev.europe-west4.hosted.app/api/evaluation_save", {
                 name,
                 apiHost: api_host,
                 x_api_key,
@@ -37354,6 +37353,14 @@ async function run() {
                 type,
                 test_name,
                 scenarios: parsedScenarios,
+                state: {
+                    type: type,
+                    testName: test_name,
+                    api_host,
+                    withAi: false
+                },
+                userId: "zUdxl6wz1GSlLdCESo7rRIhakgf1",
+                projectId: "d78d3f87-5b2a-4861-9139-2f9612f511ee"
             }, {
                 headers: {
                     "Content-Type": "application/json",
