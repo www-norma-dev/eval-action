@@ -104,6 +104,7 @@ async function run(): Promise<void> {
     clearInterval(heartbeatInterval);
 
     console.log('---------- RESPONSE ---------');
+    console.log(response.data);
     if (response.status < 200 || response.status >= 300) {
       core.setFailed(`❌ API request failed with status ${response.status}: ${response.statusText}`);
       spinner.fail(`API request failed with status ${response.status}`);
