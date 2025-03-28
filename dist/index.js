@@ -37345,8 +37345,9 @@ async function run() {
         let response;
         try {
             const postData = {
-                name,
-                apiHost: api_host,
+                name: 'TEST NAMe',
+                apiHost: "AIzaSyDRjlkWaYQXDuRVE47UNEKE8QdXawV_At8",
+                // apiHost: api_host,
                 x_api_key,
                 withAi: false,
                 type,
