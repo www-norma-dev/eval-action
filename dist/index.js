@@ -37345,10 +37345,10 @@ async function run() {
         let response;
         try {
             const postData = {
-                name: 'TEST NAMe',
+                name,
                 apiHost: api_host,
-                x_api_key: 'AIzaSyDRjlkWaYQXDuRVE47UNEKE8QdXawV_At8',
-                // x_api_key,
+                // x_api_key: 'AIzaSyDRjlkWaYQXDuRVE47UNEKE8QdXawV_At8',
+                x_api_key,
                 withAi: false,
                 type,
                 test_name,
@@ -37365,7 +37365,7 @@ async function run() {
             console.log('--------- postData ');
             console.log(postData);
             // Make the API POST request
-            response = await axios_1.default.post("https://eval-norma--norma-dev.europe-west4.hosted.app/api/evaluation_save", postData, {
+            response = await axios_1.default.post("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", postData, {
                 headers: {
                     "Content-Type": "application/json",
                 },
