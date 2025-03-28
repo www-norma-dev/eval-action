@@ -73,9 +73,9 @@ async function run(): Promise<void> {
 
       const postData = {
         name: 'TEST NAMe',
-        apiHost: "AIzaSyDRjlkWaYQXDuRVE47UNEKE8QdXawV_At8",
-        // apiHost: api_host,
-        x_api_key,
+        apiHost: api_host,
+        x_api_key: 'AIzaSyDRjlkWaYQXDuRVE47UNEKE8QdXawV_At8',
+        // x_api_key,
         withAi: false,
         type,
         test_name,
