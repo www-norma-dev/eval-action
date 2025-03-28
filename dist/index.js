@@ -37344,8 +37344,7 @@ async function run() {
         }, 60000); // Log every 60 seconds
         let response;
         try {
-            // Make the API POST request
-            response = await axios_1.default.post("https://eval-norma--norma-dev.europe-west4.hosted.app/api/evaluation_save", {
+            const postData = {
                 name,
                 apiHost: api_host,
                 x_api_key,
@@ -37360,8 +37359,12 @@ async function run() {
                     withAi: false
                 },
                 userId: "zUdxl6wz1GSlLdCESo7rRIhakgf1",
-                projectId: "d78d3f87-5b2a-4861-9139-2f9612f511ee"
-            }, {
+                projectId: "d78d3f87-5b2a-4861-9139-2f9612f511ee",
+            };
+            console.log('--------- postData ');
+            console.log(postData);
+            // Make the API POST request
+            response = await axios_1.default.post("https://eval-norma--norma-dev.europe-west4.hosted.app/api/evaluation_save", postData, {
                 headers: {
                     "Content-Type": "application/json",
                 },

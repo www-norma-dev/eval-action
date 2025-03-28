@@ -71,86 +71,91 @@ async function run(): Promise<void> {
     let response;
     try {
 
+      const postData = {
+        name,
+        apiHost: api_host,
+        x_api_key,
+        withAi: false,
+        type,
+        test_name,
+        scenarios: parsedScenarios,
+        state: {
+          type: type,
+          testName: test_name,
+          api_host,
+          withAi: false
+        },
+        userId: "zUdxl6wz1GSlLdCESo7rRIhakgf1",
+        projectId: "d78d3f87-5b2a-4861-9139-2f9612f511ee",
+      };
+
+      console.log('--------- postData ');
+      console.log(postData);
+
       // Make the API POST request
       response = await axios.post(
         "https://eval-norma--norma-dev.europe-west4.hosted.app/api/evaluation_save",
+        postData,
         {
-          name,
-          apiHost: api_host,
-          x_api_key,
-          withAi: false,
-          type,
-          test_name,
-          scenarios: parsedScenarios,
-          state: {
-            type: type,
-            testName: test_name,
-            api_host,
-            withAi: false
+          headers: {
+            "Content-Type": "application/json",
           },
-          userId: "zUdxl6wz1GSlLdCESo7rRIhakgf1",
-          projectId: "d78d3f87-5b2a-4861-9139-2f9612f511ee"
-        },
-    {
-      headers: {
-        "Content-Type": "application/json",
-          },
-      httpsAgent: agent,
-        timeout: 20 * 60 * 1000, // 10 minutes timeout
+          httpsAgent: agent,
+          timeout: 20 * 60 * 1000, // 10 minutes timeout
           signal: controller.signal,
         }
       );
-    clearTimeout(timeout);
-    clearInterval(heartbeatInterval);
+      clearTimeout(timeout);
+      clearInterval(heartbeatInterval);
 
-    console.log('---------- RESPONSE ---------');
-    console.log(response.data);
-    if (response.status < 200 || response.status >= 300) {
-      core.setFailed(`❌ API request failed with status ${response.status}: ${response.statusText}`);
-      spinner.fail(`API request failed with status ${response.status}`);
+      console.log('---------- RESPONSE ---------');
+      console.log(response.data);
+      if (response.status < 200 || response.status >= 300) {
+        core.setFailed(`❌ API request failed with status ${response.status}: ${response.statusText}`);
+        spinner.fail(`API request failed with status ${response.status}`);
+        return;
+      }
+
+      spinner.succeed('API response received.');
+
+    } catch (error: any) {
+      clearTimeout(timeout);
+      clearInterval(heartbeatInterval);
+      spinner.fail(`Action failed: ${error.message}`);
+      core.setFailed(`❌ API request failed: ${error.message}`);
       return;
+
     }
 
-    spinner.succeed('API response received.');
+
+
+    const apiResponse: any = response.data;
+    startGroup('API Response');
+    console.log("✅ API Response Received:", apiResponse);
+    endGroup();
+
+    // Convert the API response to a markdown table
+    const md = convertJsonToMarkdownTable(apiResponse);
+    console.log(formatTableForConsole(apiResponse));
+
+    // Use the current commit SHA as the commit identifier
+    const commit = process.env.GITHUB_SHA || 'N/A';
+
+    // Call the function to post or update the PR comment
+    await postChannelSuccessComment(
+      octokit,
+      github.context,
+      md,
+      commit,
+      api_host,
+      type,
+      test_name
+    );
 
   } catch (error: any) {
-    clearTimeout(timeout);
-    clearInterval(heartbeatInterval);
-    spinner.fail(`Action failed: ${error.message}`);
-    core.setFailed(`❌ API request failed: ${error.message}`);
-    return;
-
+    console.error(`❌ Error : ${error}`);
+    core.setFailed(`❌ Action failed: ${error.message}`);
   }
-
-
-
-  const apiResponse: any = response.data;
-  startGroup('API Response');
-  console.log("✅ API Response Received:", apiResponse);
-  endGroup();
-
-  // Convert the API response to a markdown table
-  const md = convertJsonToMarkdownTable(apiResponse);
-  console.log(formatTableForConsole(apiResponse));
-
-  // Use the current commit SHA as the commit identifier
-  const commit = process.env.GITHUB_SHA || 'N/A';
-
-  // Call the function to post or update the PR comment
-  await postChannelSuccessComment(
-    octokit,
-    github.context,
-    md,
-    commit,
-    api_host,
-    type,
-    test_name
-  );
-
-} catch (error: any) {
-  console.error(`❌ Error : ${error}`);
-  core.setFailed(`❌ Action failed: ${error.message}`);
-}
 }
 
 function convertJsonToMarkdownTable(jsonData: any): string {
