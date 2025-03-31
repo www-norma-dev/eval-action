@@ -23,7 +23,8 @@ export async function postChannelSuccessComment(
   commit: string,
   api_host: string,
   type: string,
-  test_name: string
+  test_name: string,
+  report_url: string
 ): Promise<void> {
   startGroup('Commenting on PR');
 
@@ -34,11 +35,12 @@ export async function postChannelSuccessComment(
 - **API Host:** \`${api_host}\`
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
+- **EVAL Result:** [url](\`${report_url}\`)
 **Result:** ${result}  
 
 <sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
 
-<sub>🔄 _This comment was posted automatically by [Eval Action](https://github.com/www-norma-dev/eval-action)._<sub/>
+<sub>🔄 _This comment was posted automatically by [Eval Action](\`${report_url}\`)._<sub/>
 `;
 
     const { owner, repo } = context.repo;
