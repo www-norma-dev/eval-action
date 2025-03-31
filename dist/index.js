@@ -37356,7 +37356,7 @@ async function run() {
                 state: {
                     type: type,
                     testName: test_name,
-                    api_host,
+                    apiHost: api_host,
                     withAi: false
                 },
                 userId: "zUdxl6wz1GSlLdCESo7rRIhakgf1",
