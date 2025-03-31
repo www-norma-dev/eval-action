@@ -83,14 +83,14 @@ async function run(): Promise<void> {
         state: {
           type: type,
           testName: test_name,
-          api_host,
+          apiHost: api_host,
           withAi: false
         },
         userId: "zUdxl6wz1GSlLdCESo7rRIhakgf1",
         projectId: "d78d3f87-5b2a-4861-9139-2f9612f511ee",
       };
 
-      console.log('--------- postData ');
+      console.log('--------- postData --------');
       console.log(postData);
 
       // Make the API POST request
@@ -135,8 +135,8 @@ async function run(): Promise<void> {
     endGroup();
 
     // Convert the API response to a markdown table
-    const md = convertJsonToMarkdownTable(apiResponse);
-    console.log(formatTableForConsole(apiResponse));
+    const md = convertJsonToMarkdownTable(apiResponse.rawResults);
+    console.log(formatTableForConsole(apiResponse.rawResults));
 
     // Use the current commit SHA as the commit identifier
     const commit = process.env.GITHUB_SHA || 'N/A';
@@ -149,7 +149,8 @@ async function run(): Promise<void> {
       commit,
       api_host,
       type,
-      test_name
+      test_name,
+      apiResponse.report_url
     );
 
   } catch (error: any) {

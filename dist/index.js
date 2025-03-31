@@ -37356,13 +37356,13 @@ async function run() {
                 state: {
                     type: type,
                     testName: test_name,
-                    api_host,
+                    apiHost: api_host,
                     withAi: false
                 },
                 userId: "zUdxl6wz1GSlLdCESo7rRIhakgf1",
                 projectId: "d78d3f87-5b2a-4861-9139-2f9612f511ee",
             };
-            console.log('--------- postData ');
+            console.log('--------- postData --------');
             console.log(postData);
             // Make the API POST request
             response = await axios_1.default.post("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", postData, {
@@ -37396,12 +37396,12 @@ async function run() {
         console.log("✅ API Response Received:", apiResponse);
         (0, core_1.endGroup)();
         // Convert the API response to a markdown table
-        const md = convertJsonToMarkdownTable(apiResponse);
-        console.log(formatTableForConsole(apiResponse));
+        const md = convertJsonToMarkdownTable(apiResponse.rawResults);
+        console.log(formatTableForConsole(apiResponse.rawResults));
         // Use the current commit SHA as the commit identifier
         const commit = process.env.GITHUB_SHA || 'N/A';
         // Call the function to post or update the PR comment
-        await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, md, commit, api_host, type, test_name);
+        await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, md, commit, api_host, type, test_name, apiResponse.report_url);
     }
     catch (error) {
         console.error(`❌ Error : ${error}`);
@@ -37462,7 +37462,7 @@ const core_1 = __nccwpck_require__(7484);
  * @param result - The evaluation result string.
  * @param commit - The commit SHA or identifier.
  */
-async function postChannelSuccessComment(github, context, result, commit, api_host, type, test_name) {
+async function postChannelSuccessComment(github, context, result, commit, api_host, type, test_name, report_url) {
     (0, core_1.startGroup)('Commenting on PR');
     try {
         const commentMarker = '<!-- norma-eval-comment -->';
@@ -37471,11 +37471,13 @@ async function postChannelSuccessComment(github, context, result, commit, api_ho
 - **API Host:** \`${api_host}\`
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
+- **EVAL Result:** [url](${report_url})
 **Result:** ${result}  
 
 <sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
 
-<sub>🔄 _This comment was posted automatically by [Eval Action](https://github.com/www-norma-dev/eval-action)._<sub/>
+<sub>🔄 _This comment was posted automatically by [Eval Action](${report_url})._</sub>
+url ${report_url}
 `;
         const { owner, repo } = context.repo;
         let prNumber;
