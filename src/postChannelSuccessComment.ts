@@ -35,12 +35,13 @@ export async function postChannelSuccessComment(
 - **API Host:** \`${api_host}\`
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
-- **EVAL Result:** [url](\`${report_url}\`)
+- **EVAL Result:** [url](${report_url})
 **Result:** ${result}  
 
 <sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
 
-<sub>🔄 _This comment was posted automatically by [Eval Action](\`${report_url}\`)._<sub/>
+<sub>🔄 _This comment was posted automatically by [Eval Action](${report_url})._</sub>
+url ${report_url}
 `;
 
     const { owner, repo } = context.repo;
