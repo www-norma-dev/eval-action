@@ -37365,7 +37365,7 @@ async function run() {
             console.log('--------- postData --------');
             console.log(postData);
             // Make the API POST request
-            response = await axios_1.default.post("https://eval-norma--norma-dev.europe-west4.hosted.app/api/evaluation_save", postData, {
+            response = await axios_1.default.post("https://norma-staging--norma-staging.europe-west4.hosted.app/api/evaluation_save", postData, {
                 headers: {
                     "Content-Type": "application/json",
                 },

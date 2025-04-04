@@ -95,7 +95,7 @@ async function run(): Promise<void> {
 
       // Make the API POST request
       response = await axios.post(
-        "https://eval-norma--norma-dev.europe-west4.hosted.app/api/evaluation_save",
+        "https://norma-staging--norma-staging.europe-west4.hosted.app/api/evaluation_save",
         postData,
         {
           headers: {
