@@ -37348,6 +37348,7 @@ async function run() {
                 name,
                 apiHost: api_host,
                 // x_api_key: 'AIzaSyDRjlkWaYQXDuRVE47UNEKE8QdXawV_At8',
+                model: "b18b18de-92c3-466e-81a8-e5df91890091",
                 x_api_key,
                 withAi: false,
                 type,
@@ -37365,7 +37366,7 @@ async function run() {
             console.log('--------- postData --------');
             console.log(postData);
             // Make the API POST request
-            response = await axios_1.default.post("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0", postData, {
+            response = await axios_1.default.post("https://norma.cloudfunctions.net/eval-norma-v-0", postData, {
                 headers: {
                     "Content-Type": "application/json",
                 },
