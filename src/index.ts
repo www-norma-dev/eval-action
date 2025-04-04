@@ -90,12 +90,14 @@ async function run(): Promise<void> {
         userId: "zUdxl6wz1GSlLdCESo7rRIhakgf1",
         projectId: "d78d3f87-5b2a-4861-9139-2f9612f511ee",
       };
-
+      console.log('----------- THIS IS THE URL -----------');
+      const url = "https://norma-staging--norma-staging.europe-west4.hosted.app/api/evaluation_save";
+      console.log(url);
       console.log('--------- postData --------');
       console.log(postData);
 
       // Make the API POST request
-      response = await axios.post("https://norma-staging--norma-staging.europe-west4.hosted.app/api/evaluation_save",
+      response = await axios.post(url,
         postData,
         {
           headers: {
