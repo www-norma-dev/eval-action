@@ -75,7 +75,7 @@ async function run(): Promise<void> {
         name,
         apiHost: api_host,
         // x_api_key: 'AIzaSyDRjlkWaYQXDuRVE47UNEKE8QdXawV_At8',
-        model :"b18b18de-92c3-466e-81a8-e5df91890091",
+        // model :"b18b18de-92c3-466e-81a8-e5df91890091",
         x_api_key,
         withAi: false,
         type,
