@@ -68,7 +68,7 @@ async function run(): Promise<void> {
       const postData = {
         name,
         api_host,
-        model: model_id,
+        model_id,
         x_api_key,
         with_ai: false,
         type,
