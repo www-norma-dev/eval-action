@@ -84,7 +84,7 @@ async function run(): Promise<void> {
         projectId: "d78d3f87-5b2a-4861-9139-2f9612f511ee",
       };
       console.log('----------- THIS IS THE URL -----------');
-      const url = "https://eval.norma.dev/api/evaluation_save";
+      const url = "https://eval-norma--norma-dev.europe-west4.hosted.app/api/evaluation_save";
       console.log(url);
       console.log('--------- postData --------');
       console.log(postData);
