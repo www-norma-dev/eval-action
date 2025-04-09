@@ -65,12 +65,13 @@ async function run(): Promise<void> {
       const postData = {
         name: test_name,
         api_host,
-        model: model_id,
+        model_id,
         x_api_key,
         with_ai: false,
         type,
         test_name,
         scenario_preset_id,
+        test_level : "standard",
         state: {
           type: type,
           testName: test_name,
