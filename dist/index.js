@@ -37336,11 +37336,10 @@ async function run() {
         }, 60000); // Log every 60 seconds
         let response;
         try {
-            // "b18b18de-92c3-466e-81a8-e5df91890091",
             const postData = {
                 name: test_name,
                 api_host,
-                model_id,
+                model: model_id,
                 x_api_key,
                 with_ai: false,
                 type,
