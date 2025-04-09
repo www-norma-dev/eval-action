@@ -62,9 +62,6 @@ async function run(): Promise<void> {
     }, 60000); // Log every 60 seconds
     let response;
     try {
-
-      // "b18b18de-92c3-466e-81a8-e5df91890091",
-
       const postData = {
         name: test_name,
         api_host,
