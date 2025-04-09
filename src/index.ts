@@ -43,16 +43,8 @@ async function run(): Promise<void> {
     const x_api_key: string = core.getInput("x_api_key");
     const type: string = core.getInput("type");
     const test_name: string = core.getInput("test_name");
-    const scenarios: string = core.getInput("scenarios");
-
-    // Try parsing scenarios from JSON
-    let parsedScenarios;
-    try {
-      parsedScenarios = JSON.parse(scenarios);
-    } catch (error) {
-      console.error("❌ Error parsing `scenarios`: Invalid JSON format.", error);
-      parsedScenarios = {}; // Fallback to empty object
-    }
+    const scenario_preset_id: string = core.getInput("scenario_preset_id");
+    const model_id: string = core.getInput("model_id");
 
     console.log(`🔄 Sending API request to: ${api_host}`);
 
@@ -70,31 +62,32 @@ async function run(): Promise<void> {
     }, 60000); // Log every 60 seconds
     let response;
     try {
-
       const postData = {
-        name,
-        apiHost: api_host,
-        // x_api_key: 'AIzaSyDRjlkWaYQXDuRVE47UNEKE8QdXawV_At8',
+        name: test_name,
+        api_host,
+        model_id,
         x_api_key,
-        withAi: false,
+        with_ai: false,
         type,
         test_name,
-        scenarios: parsedScenarios,
+        scenario_preset_id,
         state: {
           type: type,
           testName: test_name,
           apiHost: api_host,
           withAi: false
         },
-        userId: "zUdxl6wz1GSlLdCESo7rRIhakgf1",
+        user_id: "zUdxl6wz1GSlLdCESo7rRIhakgf1",
         projectId: "d78d3f87-5b2a-4861-9139-2f9612f511ee",
       };
-
+      console.log('----------- THIS IS THE URL -----------');
+      const url = "https://eval-norma--norma-dev.europe-west4.hosted.app/api/evaluation_save";
+      console.log(url);
       console.log('--------- postData --------');
       console.log(postData);
 
       // Make the API POST request
-      response = await axios.post("https://europe-west1-norma-dev.cloudfunctions.net/eval-norma-v-0",
+      response = await axios.post(url,
         postData,
         {
           headers: {

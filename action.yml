@@ -16,8 +16,11 @@ inputs:
   test_name:
     description: "Test name"
     required: true
-  scenarios:
+  scenario_preset_id:
     description: "Scenarios"
+    required: true
+  model_id:
+    description: "Model"
     required: true
 runs:
   using: "node16"
