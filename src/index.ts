@@ -78,8 +78,8 @@ async function run(): Promise<void> {
           apiHost: api_host,
           withAi: false
         },
-        user_id: "zUdxl6wz1GSlLdCESo7rRIhakgf1",
-        projectId: "16b3d06e-438c-444e-85d6-f2b3261b1fbe",
+        user_id: "39azGXmv85PtyjBz2GOETgCwcDf1",
+        projectId: "bc1a3952-f51a-4101-9c5f-4a9f9fbc6ac5",
       };
       console.log('----------- THIS IS THE URL -----------');
       const url = "https://eval-norma--norma-dev.europe-west4.hosted.app/api/evaluation_save";
