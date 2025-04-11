@@ -37412,20 +37412,31 @@ function convertJsonToMarkdownTable(jsonData) {
     let markdownOutput = "Conversation Logs\n\n";
     markdownOutput += `| Scenario | Attempt | GPT Score | GPT justification | Ionos eval score | Ionos eval justification | Metadata score|\n`;
     markdownOutput += `|----|----------|--------|---------|---------|---------|---------------|\n`;
-    jsonData.forEach((entry) => {
+    jsonData.sort((a, b) => {
+        const scenarioA = a["Scenario"];
+        const scenarioB = b["Scenario"];
+        const attemptA = a["Attempt"];
+        const attemptB = b["Attempt"];
+        if (scenarioA < scenarioB)
+            return -1;
+        if (scenarioA > scenarioB)
+            return 1;
+        // If Scenario is the same, sort by Attempt
+        return attemptA - attemptB;
+    }).forEach((entry) => {
         // VALIDE
         const scneario = entry["Scenario"];
         const attempt = entry["Attempt"];
         // VALIDE   
-        const gpt_score = entry["New Conv Evaluation (GPT-4)"]["match_level"];
+        const gpt_score = (entry["New Conv Evaluation (GPT-4)"]["match_level"] * 20) + '%';
         const gpt_justification = entry["New Conv Evaluation (GPT-4)"]["justification"];
-        const metadata_score = entry["Metadata Extraction score"];
+        const metadata_score = (entry["Metadata Extraction score"] * 10) + '%';
         // STILL TO BE CHECK
         const mistral = entry["New Conv Evaluation (Mistral)"];
         let ionos_score = '--';
         let ionos_justification = '--';
         if (mistral && mistral !== "No" && typeof mistral === "object") {
-            ionos_score = mistral["match_level"] || '--';
+            ionos_score = (mistral["match_level"] * 20) + '%' || 0;
             ionos_justification = mistral["justification"] || '--';
         }
         markdownOutput += `| ${scneario} | ${attempt} | ${gpt_score} | ${gpt_justification} | ${ionos_score} | ${ionos_justification} | ${metadata_score} |\n`;
