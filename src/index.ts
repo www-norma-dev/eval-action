@@ -182,7 +182,7 @@ function convertJsonToMarkdownTable(jsonData: any): string {
     // VALIDE   
     const gpt_score = (entry["New Conv Evaluation (GPT-4)"]["match_level"] * 20) + '%';
     const gpt_justification = entry["New Conv Evaluation (GPT-4)"]["justification"];
-    const metadata_score = (entry["Metadata Extraction score"] * 10) + '%';
+    const metadata_score = (entry["Metadata Extraction score"] * 100) + '%';
 
     // STILL TO BE CHECK
     const mistral = entry["New Conv Evaluation (Mistral)"];
