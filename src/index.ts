@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import fetch from 'node-fetch';
-import { postChannelSuccessComment } from './postChannelSuccessComment';
+import { postChannelComment, postChannelSuccessComment } from './postChannelSuccessComment';
 import { endGroup, startGroup } from '@actions/core';
 import ora from 'ora';
 import https from 'https';
@@ -38,7 +38,6 @@ async function run(): Promise<void> {
     }
 
     // Retrieve inputs from action.yml
-    const name: string = core.getInput("who-to-greet");
     const api_host: string = core.getInput("api_host");
     const x_api_key: string = core.getInput("x_api_key");
     const type: string = core.getInput("type");
@@ -47,6 +46,17 @@ async function run(): Promise<void> {
     const model_id: string = core.getInput("model_id");
 
     console.log(`🔄 Sending API request to: ${api_host}`);
+
+    // Call the function to post or update the PR comment
+    await postChannelComment(
+      octokit,
+      github.context,
+      api_host,
+      type,
+      test_name
+    );
+
+    return;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => {
