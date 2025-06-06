@@ -132,7 +132,7 @@ url ${report_url}
 export async function postChannelComment(
   github: InstanceType<typeof GitHub>,
   context: Context,
-  api_host: string,
+  vla_endpoint: string,
   type: string,
   test_name: string
 ): Promise<void> {
@@ -142,7 +142,7 @@ export async function postChannelComment(
     const commentMarker = '<!-- norma-eval-comment -->';
     const commentBody = `${commentMarker}
 ### 🚀 Automatic Evaluation Report
-- **API Host:** \`${api_host}\`
+- **API Host:** \`${vla_endpoint}\`
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
 
