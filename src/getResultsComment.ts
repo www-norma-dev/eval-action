@@ -16,7 +16,7 @@ export async function getResultsComment(
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
   const maxAttempts = 10;
-  const delayMs = 10000; // 10 seconds
+  const delayMs = 100000; // 10 seconds
   let attempt = 0;
   let response;
 
