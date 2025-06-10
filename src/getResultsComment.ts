@@ -13,7 +13,7 @@ export async function getResultsComment(
   startGroup('Fetching results and commenting on PR');
 
   try {
-    const baseUrl = 'https://europe-west1-norma-dev.cloudfunctions.net/ingest_event';
+    const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
     const response = await axios.get(url, {
