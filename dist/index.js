@@ -36092,24 +36092,46 @@ exports.getResultsComment = void 0;
 const core_1 = __nccwpck_require__(7484);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
 async function getResultsComment(github, context, user_id, project_id, batch_id) {
-    var _a;
+    var _a, _b, _c, _d, _e, _f;
     (0, core_1.startGroup)('Fetching results and commenting on PR');
-    try {
-        const baseUrl = 'https://europe-west1-norma-dev.cloudfunctions.net/ingest_event';
-        const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
-        const response = await axios_1.default.get(url, {
-            headers: {
-                'Content-Type': 'application/json',
+    const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
+    const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
+    const maxAttempts = 2;
+    const delayMs = 10000; // 10 seconds
+    let attempt = 0;
+    let response;
+    // 🔁 Polling loop
+    while (attempt < maxAttempts) {
+        try {
+            response = await axios_1.default.get(url, {
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (response.status === 200 && ((_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.results) === null || _b === void 0 ? void 0 : _b.scenarios)) {
+                console.log(`✅ Results found on attempt ${attempt + 1}`);
+                break;
             }
-        });
-        if (response.status !== 200) {
-            (0, core_1.setFailed)(`Failed to fetch results: ${response.statusText}`);
-            return;
         }
+        catch (err) {
+            if (((_c = err.response) === null || _c === void 0 ? void 0 : _c.status) === 404 || ((_d = err.response) === null || _d === void 0 ? void 0 : _d.status) === 405) {
+                console.log(`⏳ Results not ready yet (attempt ${attempt + 1})...`);
+            }
+            else {
+                (0, core_1.setFailed)(`❌ Unexpected error: ${err.message}`);
+                return;
+            }
+        }
+        attempt++;
+        await new Promise(res => setTimeout(res, delayMs));
+    }
+    if (!response || response.status !== 200) {
+        (0, core_1.setFailed)(`❌ Failed to fetch results after ${maxAttempts} attempts.`);
+        return;
+    }
+    // ✅ Process and post the comment
+    try {
         const resultData = response.data;
         const dashboardUrl = resultData.url;
-        const scenarios = ((_a = resultData === null || resultData === void 0 ? void 0 : resultData.results) === null || _a === void 0 ? void 0 : _a.scenarios) || [];
-        // Format scenario list as markdown
+        const scenarios = ((_e = resultData === null || resultData === void 0 ? void 0 : resultData.results) === null || _e === void 0 ? void 0 : _e.scenarios) || [];
         const scenarioList = scenarios.map((s, index) => `- Scenario ${index + 1}: ${s.name || 'Unnamed'}`).join('\n');
         const commentMarker = '<!-- norma-eval-comment -->';
         const commentBody = `${commentMarker}
@@ -36126,7 +36148,7 @@ ${scenarioList || '_No scenarios returned_'}
 `;
         const { owner, repo } = context.repo;
         let prNumber;
-        if (context.payload.pull_request && context.payload.pull_request.number) {
+        if ((_f = context.payload.pull_request) === null || _f === void 0 ? void 0 : _f.number) {
             prNumber = context.payload.pull_request.number;
         }
         else {
