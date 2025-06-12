@@ -36097,7 +36097,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
     const maxAttempts = 10;
-    const delayMs = 100000; // 10 seconds
+    const delayMs = 10000; // 10 seconds
     let attempt = 0;
     let response;
     // 🔁 Polling loop
@@ -36195,7 +36195,7 @@ ${scenarioList || '_No scenarios returned_'}
         }
     }
     catch (err) {
-        (0, core_1.setFailed)(`Error posting comment: ${err.message}`);
+        (0, core_1.setFailed)(`❌ Error posting comment: ${err.message}`);
     }
     finally {
         (0, core_1.endGroup)();
