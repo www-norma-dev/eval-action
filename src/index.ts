@@ -95,7 +95,7 @@ async function run(): Promise<void> {
         test_level : "standard",
         state: {
           testName: test_name,
-          apiHost: vla_credentials,
+          apiHost: vla_endpoint,
           withAi: false
         },
         user_id: "39azGXmv85PtyjBz2GOETgCwcDf1",
