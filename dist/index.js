@@ -36287,7 +36287,6 @@ async function run() {
         // Call the function to post or update the PR comment
         await (0, postChannelSuccessComment_1.postChannelComment)(octokit, github.context, vla_endpoint, test_name, type);
         await (0, getResultsComment_1.getResultsComment)(octokit, github.context, user_id, project_id, batch_id);
-        return;
         const controller = new node_abort_controller_1.AbortController();
         const timeout = setTimeout(() => {
             controller.abort();
