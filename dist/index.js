@@ -36366,6 +36366,7 @@ async function run() {
 }
 function convertJsonToMarkdownTable(jsonData) {
     if (!Array.isArray(jsonData)) {
+        console.log("JSON data received:", jsonData);
         console.error("❌ convertJsonToMarkdownTable: Expected array but got:", jsonData);
         return "Invalid data format received for markdown conversion.";
     }
