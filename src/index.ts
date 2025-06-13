@@ -98,8 +98,8 @@ async function run(): Promise<void> {
           apiHost: vla_endpoint,
           withAi: false
         },
-        user_id: "39azGXmv85PtyjBz2GOETgCwcDf1",
-        project_id: "bc1a3952-f51a-4101-9c5f-4a9f9fbc6ac5",
+        user_id: user_id,
+        project_id: project_id,
       };
       console.log('----------- THIS IS THE URL -----------');
       const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
