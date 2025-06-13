@@ -48,8 +48,6 @@ async function run(): Promise<void> {
     const scenario_id: string = core.getInput("scenario_id");
     const user_id: string = core.getInput("user_id");
     const attempts: string = core.getInput("attempts");
-    const batch_id: string = core.getInput("batch_id");
-
 
     console.log(`🔄 Sending API request to: ${vla_endpoint}`);
     const type = 'multiAgent';
@@ -158,6 +156,8 @@ async function run(): Promise<void> {
       test_name,
       apiResponse.report_url
     );
+
+    const batch_id = apiResponse.batchTestId;
 
     await getResultsComment(
       octokit,

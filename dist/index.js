@@ -36096,6 +36096,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     (0, core_1.startGroup)('Fetching results and commenting on PR');
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
+    console.log("getRsultComment.ts -- params:", user_id, project_id, batch_id);
     const maxAttempts = 10;
     const delayMs = 10000; // 10 seconds
     let attempt = 0;
@@ -36281,7 +36282,6 @@ async function run() {
         const scenario_id = core.getInput("scenario_id");
         const user_id = core.getInput("user_id");
         const attempts = core.getInput("attempts");
-        const batch_id = core.getInput("batch_id");
         console.log(`🔄 Sending API request to: ${vla_endpoint}`);
         const type = 'multiAgent';
         // Call the function to post or update the PR comment
@@ -36359,6 +36359,7 @@ async function run() {
         const commit = process.env.GITHUB_SHA || 'N/A';
         // Call the function to post or update the PR comment
         await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, md, commit, vla_endpoint, type, test_name, apiResponse.report_url);
+        const batch_id = apiResponse.batchTestId;
         await (0, getResultsComment_1.getResultsComment)(octokit, github.context, user_id, project_id, batch_id);
     }
     catch (error) {

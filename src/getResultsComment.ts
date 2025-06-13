@@ -15,6 +15,8 @@ export async function getResultsComment(
   const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
+  console.log("getRsultComment.ts -- params:", user_id, project_id, batch_id)
+
   const maxAttempts = 10;
   const delayMs = 10000; // 10 seconds
   let attempt = 0;
