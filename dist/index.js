@@ -36317,7 +36317,7 @@ async function run() {
                 attempts
             };
             console.log('----------- THIS IS THE URL -----------');
-            const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
+            const url = "https://evap-app-api-service-dev-966286810479.europe-west1.run.app";
             console.log(url);
             console.log('--------- postData --------');
             console.log(postData);
