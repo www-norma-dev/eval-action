@@ -36286,7 +36286,6 @@ async function run() {
         const type = 'multiAgent';
         // Call the function to post or update the PR comment
         await (0, postChannelSuccessComment_1.postChannelComment)(octokit, github.context, vla_endpoint, test_name, type);
-        await (0, getResultsComment_1.getResultsComment)(octokit, github.context, user_id, project_id, batch_id);
         const controller = new node_abort_controller_1.AbortController();
         const timeout = setTimeout(() => {
             controller.abort();
@@ -36304,6 +36303,7 @@ async function run() {
                 vla_endpoint,
                 vla_credentials,
                 model_id,
+                model_name,
                 test_name,
                 scenario_id,
                 test_level: "standard",
@@ -36314,6 +36314,7 @@ async function run() {
                 },
                 user_id: user_id,
                 project_id: project_id,
+                attempts
             };
             console.log('----------- THIS IS THE URL -----------');
             const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
@@ -36358,6 +36359,7 @@ async function run() {
         const commit = process.env.GITHUB_SHA || 'N/A';
         // Call the function to post or update the PR comment
         await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, md, commit, vla_endpoint, type, test_name, apiResponse.report_url);
+        await (0, getResultsComment_1.getResultsComment)(octokit, github.context, user_id, project_id, batch_id);
     }
     catch (error) {
         console.error(`❌ Error : ${error}`);

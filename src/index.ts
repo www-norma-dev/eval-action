@@ -62,13 +62,6 @@ async function run(): Promise<void> {
       test_name,
       type
     );
-    await getResultsComment(
-      octokit,
-      github.context,
-      user_id,
-      project_id,
-      batch_id,
-    );
     
 
     const controller = new AbortController();
@@ -90,6 +83,7 @@ async function run(): Promise<void> {
         vla_endpoint,
         vla_credentials,
         model_id,
+        model_name,
         test_name,
         scenario_id,
         test_level : "standard",
@@ -100,6 +94,7 @@ async function run(): Promise<void> {
         },
         user_id: user_id,
         project_id: project_id,
+        attempts
       };
       console.log('----------- THIS IS THE URL -----------');
       const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
@@ -162,6 +157,14 @@ async function run(): Promise<void> {
       type,
       test_name,
       apiResponse.report_url
+    );
+
+    await getResultsComment(
+      octokit,
+      github.context,
+      user_id,
+      project_id,
+      batch_id,
     );
 
   } catch (error: any) {
