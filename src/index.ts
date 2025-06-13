@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import fetch from 'node-fetch';
 import { postChannelComment, postChannelSuccessComment } from './postChannelSuccessComment';
+import { getResultsComment } from './getResultsComment';
 import { endGroup, startGroup } from '@actions/core';
 import ora from 'ora';
 import https from 'https';
@@ -38,25 +39,28 @@ async function run(): Promise<void> {
     }
 
     // Retrieve inputs from action.yml
-    const api_host: string = core.getInput("api_host");
-    const x_api_key: string = core.getInput("x_api_key");
-    const type: string = core.getInput("type");
+    const vla_endpoint: string = core.getInput("vla_endpoint");
+    const vla_credentials: string = core.getInput("vla_credentials");
     const test_name: string = core.getInput("test_name");
-    const scenario_preset_id: string = core.getInput("scenario_preset_id");
+    const project_id: string = core.getInput("project_id");
     const model_id: string = core.getInput("model_id");
+    const model_name: string = core.getInput("model_name");
+    const scenario_id: string = core.getInput("scenario_id");
+    const user_id: string = core.getInput("user_id");
+    const attempts: string = core.getInput("attempts");
 
-    console.log(`🔄 Sending API request to: ${api_host}`);
+    console.log(`🔄 Sending API request to: ${vla_endpoint}`);
+    const type = 'multiAgent';
 
     // Call the function to post or update the PR comment
     await postChannelComment(
       octokit,
       github.context,
-      api_host,
-      type,
-      test_name
+      vla_endpoint,
+      test_name,
+      type
     );
-
-    return;
+    
 
     const controller = new AbortController();
     const timeout = setTimeout(() => {
@@ -74,25 +78,24 @@ async function run(): Promise<void> {
     try {
       const postData = {
         name: test_name,
-        api_host,
+        vla_endpoint,
+        vla_credentials,
         model_id,
-        x_api_key,
-        with_ai: false,
-        type,
+        model_name,
         test_name,
-        scenario_preset_id,
+        scenario_id,
         test_level : "standard",
         state: {
-          type: type,
           testName: test_name,
-          apiHost: api_host,
+          apiHost: vla_endpoint,
           withAi: false
         },
-        user_id: "39azGXmv85PtyjBz2GOETgCwcDf1",
-        projectId: "bc1a3952-f51a-4101-9c5f-4a9f9fbc6ac5",
+        user_id: user_id,
+        project_id: project_id,
+        attempts
       };
       console.log('----------- THIS IS THE URL -----------');
-      const url = "https://eval-norma--norma-dev.europe-west4.hosted.app/api/evaluation_save";
+      const url = "https://evap-app-api-service-dev-966286810479.europe-west1.run.app";
       console.log(url);
       console.log('--------- postData --------');
       console.log(postData);
@@ -128,10 +131,7 @@ async function run(): Promise<void> {
       spinner.fail(`Action failed: ${error.message}`);
       core.setFailed(`❌ API request failed: ${error.message}`);
       return;
-
     }
-
-
 
     const apiResponse: any = response.data;
     startGroup('API Response');
@@ -151,10 +151,20 @@ async function run(): Promise<void> {
       github.context,
       md,
       commit,
-      api_host,
+      vla_endpoint,
       type,
       test_name,
       apiResponse.report_url
+    );
+
+    const batch_id = apiResponse.batchTestId;
+
+    await getResultsComment(
+      octokit,
+      github.context,
+      user_id,
+      project_id,
+      batch_id,
     );
 
   } catch (error: any) {
@@ -165,6 +175,7 @@ async function run(): Promise<void> {
 
 function convertJsonToMarkdownTable(jsonData: any): string {
   if (!Array.isArray(jsonData)) {
+    console.log("JSON data received:", jsonData)
     console.error("❌ convertJsonToMarkdownTable: Expected array but got:", jsonData);
     return "Invalid data format received for markdown conversion.";
   }
