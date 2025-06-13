@@ -18,7 +18,7 @@ export async function getResultsComment(
   console.log("getRsultComment.ts -- params:", user_id, project_id, batch_id)
 
   const maxAttempts = 10;
-  const delayMs = 10000; // 10 seconds
+  const delayMs = 100000; // 10 mins
   let attempt = 0;
   let response;
 

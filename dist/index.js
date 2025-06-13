@@ -36098,7 +36098,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
     console.log("getRsultComment.ts -- params:", user_id, project_id, batch_id);
     const maxAttempts = 10;
-    const delayMs = 10000; // 10 seconds
+    const delayMs = 100000; // 10 mins
     let attempt = 0;
     let response;
     // 🔁 Polling loop
