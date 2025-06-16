@@ -36133,22 +36133,21 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     // ✅ Process and post the comment
     try {
         const resultData = response.data;
-        const dashboardUrl = resultData.url;
+        console.log("GET results content:", response.data);
         const scenarios = ((_e = resultData === null || resultData === void 0 ? void 0 : resultData.results) === null || _e === void 0 ? void 0 : _e.scenarios) || [];
         const scenarioList = scenarios.map((s, index) => `- Scenario ${index + 1}: ${s.name || 'Unnamed'}`).join('\n');
         const commentMarker = '<!-- norma-eval-comment -->';
         const commentBody = `${commentMarker}
-### ✅ Fetched Evaluation Results
-- **User ID:** \`${user_id}\`
-- **Project ID:** \`${project_id}\`
-- **Batch ID:** \`${batch_id}\`
-- **Dashboard:** [View Results](${dashboardUrl})
-
-**Scenarios:**
-${scenarioList || '_No scenarios returned_'}
-    
-<sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
-`;
+  ### ✅ Fetched Evaluation Results
+  - **User ID:** \`${user_id}\`
+  - **Project ID:** \`${project_id}\`
+  - **Batch ID:** \`${batch_id}\`
+  
+  **Scenarios:**
+  ${scenarioList || '_No scenarios returned_'}
+  
+  <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
+  `;
         const { owner, repo } = context.repo;
         let prNumber;
         if ((_f = context.payload.pull_request) === null || _f === void 0 ? void 0 : _f.number) {
@@ -36353,7 +36352,7 @@ async function run() {
         }
         const apiResponse = response.data;
         (0, core_1.startGroup)('API Response');
-        const batchId = (_a = response.request) === null || _a === void 0 ? void 0 : _a.batchId; // get batchId build during the pub/sub call
+        const batchId = (_a = response.request) === null || _a === void 0 ? void 0 : _a.batchTestId; // get batchId build during the pub/sub call
         console.log("✅ API Response Received:", apiResponse);
         console.log("batchID from ingest event:", batchId);
         (0, core_1.endGroup)();

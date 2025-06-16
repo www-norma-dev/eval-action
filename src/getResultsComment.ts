@@ -57,27 +57,27 @@ export async function getResultsComment(
   // ✅ Process and post the comment
   try {
     const resultData = response.data;
-    const dashboardUrl = resultData.url;
-    const scenarios = resultData?.results?.scenarios || [];
+    console.log("GET results content:", response.data )
 
+    const scenarios = resultData?.results?.scenarios || [];
+    
     const scenarioList = scenarios.map((s: any, index: number) =>
       `- Scenario ${index + 1}: ${s.name || 'Unnamed'}`
-    ).join('\n');
-
-    const commentMarker = '<!-- norma-eval-comment -->';
-    const commentBody = `${commentMarker}
-### ✅ Fetched Evaluation Results
-- **User ID:** \`${user_id}\`
-- **Project ID:** \`${project_id}\`
-- **Batch ID:** \`${batch_id}\`
-- **Dashboard:** [View Results](${dashboardUrl})
-
-**Scenarios:**
-${scenarioList || '_No scenarios returned_'}
-    
-<sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
-`;
-
+  ).join('\n');
+  
+  const commentMarker = '<!-- norma-eval-comment -->';
+  const commentBody = `${commentMarker}
+  ### ✅ Fetched Evaluation Results
+  - **User ID:** \`${user_id}\`
+  - **Project ID:** \`${project_id}\`
+  - **Batch ID:** \`${batch_id}\`
+  
+  **Scenarios:**
+  ${scenarioList || '_No scenarios returned_'}
+  
+  <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
+  `;
+  
     const { owner, repo } = context.repo;
 
     let prNumber: number | undefined;

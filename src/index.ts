@@ -135,7 +135,7 @@ async function run(): Promise<void> {
 
     const apiResponse: any = response.data;
     startGroup('API Response');
-    const batchId = response.request?.batchId // get batchId build during the pub/sub call
+    const batchId = response.request?.batchTestId // get batchId build during the pub/sub call
     console.log("✅ API Response Received:", apiResponse);
     console.log("batchID from ingest event:", batchId);
     endGroup();
