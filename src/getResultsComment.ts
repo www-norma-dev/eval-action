@@ -58,22 +58,16 @@ export async function getResultsComment(
   try {
     const resultData = response.data;
     console.log("GET results content:", response.data )
-
-    const scenarios = resultData?.results?.scenarios || [];
-    
-    const scenarioList = scenarios.map((s: any, index: number) =>
-      `- Scenario ${index + 1}: ${s.name || 'Unnamed'}`
-  ).join('\n');
+    const dashboardUrl = resultData?.url;    
   
-  const commentMarker = '<!-- norma-eval-comment -->';
+  const commentMarker = '<!-- norma-eval-get-comment -->';
   const commentBody = `${commentMarker}
   ### ✅ Fetched Evaluation Results
   - **User ID:** \`${user_id}\`
   - **Project ID:** \`${project_id}\`
   - **Batch ID:** \`${batch_id}\`
+  Check results in the dashboard: \`${dashboardUrl}\`
   
-  **Scenarios:**
-  ${scenarioList || '_No scenarios returned_'}
   
   <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
   `;

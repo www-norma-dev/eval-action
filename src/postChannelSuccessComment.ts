@@ -29,7 +29,7 @@ export async function postChannelSuccessComment(
   startGroup('Commenting on PR');
 
   try {
-    const commentMarker = '<!-- norma-eval-comment -->';
+    const commentMarker = '<!-- norma-eval-post-comment -->';
     const commentBody = `${commentMarker}
 ### 🚀 Automatic Evaluation Report
 - **API Host:** \`${api_host}\`

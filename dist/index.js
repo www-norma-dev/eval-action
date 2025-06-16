@@ -36092,7 +36092,7 @@ exports.getResultsComment = void 0;
 const core_1 = __nccwpck_require__(7484);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
 async function getResultsComment(github, context, user_id, project_id, batch_id) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e;
     (0, core_1.startGroup)('Fetching results and commenting on PR');
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
@@ -36134,23 +36134,21 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     try {
         const resultData = response.data;
         console.log("GET results content:", response.data);
-        const scenarios = ((_e = resultData === null || resultData === void 0 ? void 0 : resultData.results) === null || _e === void 0 ? void 0 : _e.scenarios) || [];
-        const scenarioList = scenarios.map((s, index) => `- Scenario ${index + 1}: ${s.name || 'Unnamed'}`).join('\n');
-        const commentMarker = '<!-- norma-eval-comment -->';
+        const dashboardUrl = resultData === null || resultData === void 0 ? void 0 : resultData.url;
+        const commentMarker = '<!-- norma-eval-get-comment -->';
         const commentBody = `${commentMarker}
   ### ✅ Fetched Evaluation Results
   - **User ID:** \`${user_id}\`
   - **Project ID:** \`${project_id}\`
   - **Batch ID:** \`${batch_id}\`
+  Check results in the dashboard: \`${dashboardUrl}\`
   
-  **Scenarios:**
-  ${scenarioList || '_No scenarios returned_'}
   
   <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
   `;
         const { owner, repo } = context.repo;
         let prNumber;
-        if ((_f = context.payload.pull_request) === null || _f === void 0 ? void 0 : _f.number) {
+        if ((_e = context.payload.pull_request) === null || _e === void 0 ? void 0 : _e.number) {
             prNumber = context.payload.pull_request.number;
         }
         else {
@@ -36455,7 +36453,7 @@ const core_1 = __nccwpck_require__(7484);
 async function postChannelSuccessComment(github, context, result, commit, api_host, type, test_name, report_url) {
     (0, core_1.startGroup)('Commenting on PR');
     try {
-        const commentMarker = '<!-- norma-eval-comment -->';
+        const commentMarker = '<!-- norma-eval-post-comment -->';
         const commentBody = `${commentMarker}
 ### 🚀 Automatic Evaluation Report
 - **API Host:** \`${api_host}\`
