@@ -36096,7 +36096,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     (0, core_1.startGroup)('Fetching results and commenting on PR');
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
-    console.log("getRsultComment.ts -- params:", user_id, project_id, batch_id);
+    console.log("getResultComment.ts -- params:", user_id, project_id, batch_id);
     const maxAttempts = 10;
     const delayMs = 100000; // 10 mins
     let attempt = 0;
@@ -36110,6 +36110,9 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
             if (response.status === 200 && ((_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.results) === null || _b === void 0 ? void 0 : _b.scenarios)) {
                 console.log(`✅ Results found on attempt ${attempt + 1}`);
                 break;
+            }
+            if (response.status === 500) {
+                console.log(`⏳ Results not ready yet (attempt ${attempt + 1})... (status ${status})`);
             }
         }
         catch (err) {
@@ -36351,7 +36354,7 @@ async function run() {
         }
         const apiResponse = response.data;
         (0, core_1.startGroup)('API Response');
-        const batchId = (_a = response.request) === null || _a === void 0 ? void 0 : _a.batchId;
+        const batchId = (_a = response.request) === null || _a === void 0 ? void 0 : _a.batchId; // get batchId build during the pub/sub call
         console.log("✅ API Response Received:", apiResponse);
         console.log("batchID from ingest event:", batchId);
         (0, core_1.endGroup)();

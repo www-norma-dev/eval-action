@@ -15,7 +15,7 @@ export async function getResultsComment(
   const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
-  console.log("getRsultComment.ts -- params:", user_id, project_id, batch_id)
+  console.log("getResultComment.ts -- params:", user_id, project_id, batch_id)
 
   const maxAttempts = 10;
   const delayMs = 100000; // 10 mins
@@ -33,6 +33,10 @@ export async function getResultsComment(
         console.log(`✅ Results found on attempt ${attempt + 1}`);
         break;
       }
+      if (response.status === 500 ) {
+        console.log(`⏳ Results not ready yet (attempt ${attempt + 1})... (status ${status})`);
+      }
+      
     } catch (err: any) {
       if (err.response?.status === 404 || err.response?.status === 405) {
         console.log(`⏳ Results not ready yet (attempt ${attempt + 1})...`);
