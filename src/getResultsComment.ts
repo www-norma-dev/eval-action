@@ -34,6 +34,7 @@ export async function getResultsComment(
       });
 
       if (response.status === 200 && response.data?.results?.scenarios) {
+        console.log('📦 Raw scenarios:', JSON.stringify(response.data.results.scenarios, null, 2));
         markdownResults = convertJsonToMarkdownTable(response.data.results.scenarios);
         console.log('--- Markdown table results:', markdownResults);
 

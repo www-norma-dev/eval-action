@@ -36112,6 +36112,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
                 headers: { 'Content-Type': 'application/json' }
             });
             if (response.status === 200 && ((_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.results) === null || _b === void 0 ? void 0 : _b.scenarios)) {
+                console.log('📦 Raw scenarios:', JSON.stringify(response.data.results.scenarios, null, 2));
                 markdownResults = (0, _1.convertJsonToMarkdownTable)(response.data.results.scenarios);
                 console.log('--- Markdown table results:', markdownResults);
                 console.log(`✅ Results found on attempt ${attempt + 1}`);
@@ -36387,6 +36388,10 @@ function convertJsonToMarkdownTable(scenarios) {
     ];
     const rows = [];
     for (const scenario of scenarios) {
+        console.log('🔹 scenario:', JSON.stringify(scenario, null, 2));
+        if (!Array.isArray(scenario.attempts)) {
+            console.warn('⚠️ Missing attempts:', scenario);
+        }
         const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
         if (!Array.isArray(scenario.attempts))
             continue;
@@ -36408,13 +36413,12 @@ function convertJsonToMarkdownTable(scenarios) {
             ]);
         }
     }
-    // Construction du tableau Markdown
     const markdown = [
         '| ' + headers.join(' | ') + ' |',
         '| ' + headers.map(() => '---').join(' | ') + ' |',
         ...rows.map(row => '| ' + row.map(cell => cell.toString().replace(/\n/g, ' ')).join(' | ') + ' |')
     ].join('\n');
-    return `### Conversation Logs\n\n${markdown}`;
+    return `\n${markdown}`;
 }
 exports.convertJsonToMarkdownTable = convertJsonToMarkdownTable;
 function formatTableForConsole(jsonData) {

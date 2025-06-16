@@ -188,6 +188,12 @@ export function convertJsonToMarkdownTable(scenarios: any[]): string {
   const rows: string[][] = [];
 
   for (const scenario of scenarios) {
+    console.log('🔹 scenario:', JSON.stringify(scenario, null, 2));
+  if (!Array.isArray(scenario.attempts)) {
+    console.warn('⚠️ Missing attempts:', scenario);
+  }
+
+
     const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
 
     if (!Array.isArray(scenario.attempts)) continue;
@@ -212,14 +218,13 @@ export function convertJsonToMarkdownTable(scenarios: any[]): string {
     }
   }
 
-  // Construction du tableau Markdown
   const markdown = [
     '| ' + headers.join(' | ') + ' |',
     '| ' + headers.map(() => '---').join(' | ') + ' |',
     ...rows.map(row => '| ' + row.map(cell => cell.toString().replace(/\n/g, ' ')).join(' | ') + ' |')
   ].join('\n');
 
-  return `### Conversation Logs\n\n${markdown}`;
+  return `\n${markdown}`;
 }
 
 
