@@ -36371,45 +36371,32 @@ async function run() {
         core.setFailed(`❌ Action failed: ${error.message}`);
     }
 }
-function convertJsonToMarkdownTable(jsonData) {
-    if (!Array.isArray(jsonData)) {
-        console.log("JSON data received:", jsonData);
-        console.error("❌ convertJsonToMarkdownTable: Expected array but got:", jsonData);
+function convertJsonToMarkdownTable(resultAttempts) {
+    if (!Array.isArray(resultAttempts)) {
+        console.error("❌ convertJsonToMarkdownTable: Expected array but got:", resultAttempts);
         return "Invalid data format received for markdown conversion.";
     }
-    let markdownOutput = "Conversation Logs\n\n";
-    markdownOutput += `| Scenario | Attempt | GPT Score | GPT justification | Ionos eval score | Ionos eval justification | Metadata score|\n`;
-    markdownOutput += `|----|----------|--------|---------|---------|---------|---------------|\n`;
-    jsonData.sort((a, b) => {
-        const scenarioA = a["Scenario"];
-        const scenarioB = b["Scenario"];
-        const attemptA = a["Attempt"];
-        const attemptB = b["Attempt"];
-        if (scenarioA < scenarioB)
-            return -1;
-        if (scenarioA > scenarioB)
-            return 1;
-        // If Scenario is the same, sort by Attempt
-        return attemptA - attemptB;
-    }).forEach((entry) => {
-        // VALIDE
-        const scenario = entry["Scenario"];
-        const attempt = entry["Attempt"];
-        // VALIDE   
-        const gpt_score = (entry["New Conv Evaluation (GPT-4)"]["match_level"] * 20) + '%';
-        const gpt_justification = entry["New Conv Evaluation (GPT-4)"]["justification"];
-        const metadata_score = (entry["Metadata Extraction score"] * 100) + '%';
-        // STILL TO BE CHECK
-        const mistral = entry["New Conv Evaluation (Mistral)"];
-        let ionos_score = '--';
-        let ionos_justification = '--';
-        if (mistral && mistral !== "No" && typeof mistral === "object") {
-            ionos_score = (mistral["match_level"] * 20) + '%' || 0;
-            ionos_justification = mistral["justification"] || '--';
-        }
-        markdownOutput += `| ${scenario} | ${attempt} | ${gpt_score} | ${gpt_justification} | ${ionos_score} | ${ionos_justification} | ${metadata_score} |\n`;
+    let markdown = "Conversation Logs\n\n";
+    markdown += "| Scenario | Attempt | GPT Score | GPT Justification | Ionos Score | Ionos Justification | Metadata Score |\n";
+    markdown += "|----------|---------|-----------|-------------------|-------------|----------------------|----------------|\n";
+    resultAttempts.forEach((result) => {
+        const scenarioName = result.scenarioName || "Unknown results";
+        const attempts = result.attempts || [];
+        attempts.forEach((attempt) => {
+            var _a, _b;
+            const attemptId = (_a = attempt.attemptId) !== null && _a !== void 0 ? _a : "N/A";
+            const gptEval = attempt.openaiReplyEvaluation || {};
+            const gptScore = gptEval.match_level !== undefined ? `${gptEval.match_level * 100}%` : "--";
+            const gptJustification = gptEval.justification || "--";
+            const ionosEval = attempt.ionosReplyEvaluation || {};
+            const ionosScore = ionosEval.match_level !== undefined ? `${ionosEval.match_level * 100}%` : "--";
+            const ionosJustification = ionosEval.justification || "--";
+            const extractedEval = (_b = attempt.evaluationResults) === null || _b === void 0 ? void 0 : _b.extractedMetadataEvaluation;
+            const metadataScore = extractedEval !== undefined ? `${extractedEval * 100}%` : "--";
+            markdown += `| ${scenarioName} | ${attemptId} | ${gptScore} | ${gptJustification} | ${ionosScore} | ${ionosJustification} | ${metadataScore} |\n`;
+        });
     });
-    return markdownOutput;
+    return markdown;
 }
 exports.convertJsonToMarkdownTable = convertJsonToMarkdownTable;
 function formatTableForConsole(jsonData) {
