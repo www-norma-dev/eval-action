@@ -36146,7 +36146,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
   - **Project ID:** \`${project_id}\`
   - **Batch ID:** \`${batch_id}\`
   **Check results in the dashboard**:[url](${dashboardUrl})
-  **Markdown table of results:**\n\n${markdownResults}
+  **Results table:**\n\n${markdownResults}
   
   
   <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
@@ -36254,7 +36254,6 @@ const https_1 = __importDefault(__nccwpck_require__(5692));
 const node_abort_controller_1 = __nccwpck_require__(4470);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
 async function run() {
-    var _a;
     try {
         const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
         if (!token) {
@@ -36356,17 +36355,14 @@ async function run() {
         }
         const apiResponse = response.data;
         (0, core_1.startGroup)('API Response');
-        const batchId = (_a = response.request) === null || _a === void 0 ? void 0 : _a.batchTestId; // get batchId build during the pub/sub call
+        const batchId = apiResponse.batchTestId; // get batchId build during the pub/sub call
         console.log("✅ API Response Received:", apiResponse);
         console.log("batchID from ingest event:", batchId);
         (0, core_1.endGroup)();
-        // Convert the API response to a markdown table
-        const md = convertJsonToMarkdownTable(apiResponse.results);
-        console.log(formatTableForConsole(apiResponse.results));
         // Use the current commit SHA as the commit identifier
         const commit = process.env.GITHUB_SHA || 'N/A';
         // Call the function to post or update the PR comment
-        await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, md, commit, vla_endpoint, type, test_name, apiResponse.report_url);
+        await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, commit, vla_endpoint, type, test_name, apiResponse.report_url);
         const batch_id = apiResponse.batchTestId;
         await (0, getResultsComment_1.getResultsComment)(octokit, github.context, user_id, project_id, batch_id);
     }
@@ -36397,7 +36393,7 @@ function convertJsonToMarkdownTable(jsonData) {
         return attemptA - attemptB;
     }).forEach((entry) => {
         // VALIDE
-        const scneario = entry["Scenario"];
+        const scenario = entry["Scenario"];
         const attempt = entry["Attempt"];
         // VALIDE   
         const gpt_score = (entry["New Conv Evaluation (GPT-4)"]["match_level"] * 20) + '%';
@@ -36411,7 +36407,7 @@ function convertJsonToMarkdownTable(jsonData) {
             ionos_score = (mistral["match_level"] * 20) + '%' || 0;
             ionos_justification = mistral["justification"] || '--';
         }
-        markdownOutput += `| ${scneario} | ${attempt} | ${gpt_score} | ${gpt_justification} | ${ionos_score} | ${ionos_justification} | ${metadata_score} |\n`;
+        markdownOutput += `| ${scenario} | ${attempt} | ${gpt_score} | ${gpt_justification} | ${ionos_score} | ${ionos_justification} | ${metadata_score} |\n`;
     });
     return markdownOutput;
 }
@@ -36457,7 +36453,7 @@ const core_1 = __nccwpck_require__(7484);
  * @param result - The evaluation result string.
  * @param commit - The commit SHA or identifier.
  */
-async function postChannelSuccessComment(github, context, result, commit, api_host, type, test_name, report_url) {
+async function postChannelSuccessComment(github, context, commit, api_host, type, test_name, report_url) {
     (0, core_1.startGroup)('Commenting on PR');
     try {
         const commentMarker = '<!-- norma-eval-post-comment -->';
@@ -36466,7 +36462,6 @@ async function postChannelSuccessComment(github, context, result, commit, api_ho
 - **API Host:** \`${api_host}\`
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
-**Result:** ${result}  
 
 <sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
 

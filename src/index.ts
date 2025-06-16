@@ -135,14 +135,10 @@ async function run(): Promise<void> {
 
     const apiResponse: any = response.data;
     startGroup('API Response');
-    const batchId = response.request?.batchTestId // get batchId build during the pub/sub call
+    const batchId = apiResponse.batchTestId // get batchId build during the pub/sub call
     console.log("✅ API Response Received:", apiResponse);
     console.log("batchID from ingest event:", batchId);
     endGroup();
-
-    // Convert the API response to a markdown table
-    const md = convertJsonToMarkdownTable(apiResponse.results);
-    console.log(formatTableForConsole(apiResponse.results));
 
     // Use the current commit SHA as the commit identifier
     const commit = process.env.GITHUB_SHA || 'N/A';
@@ -151,7 +147,6 @@ async function run(): Promise<void> {
     await postChannelSuccessComment(
       octokit,
       github.context,
-      md,
       commit,
       vla_endpoint,
       type,
@@ -200,7 +195,7 @@ export function convertJsonToMarkdownTable(jsonData: any): string {
     return attemptA - attemptB;
   }). forEach((entry: any) => {
     // VALIDE
-    const scneario = entry["Scenario"];
+    const scenario = entry["Scenario"];
     const attempt = entry["Attempt"];
     // VALIDE   
     const gpt_score = (entry["New Conv Evaluation (GPT-4)"]["match_level"] * 20) + '%';
@@ -216,7 +211,7 @@ export function convertJsonToMarkdownTable(jsonData: any): string {
       ionos_justification = mistral["justification"] || '--';
     }
 
-    markdownOutput += `| ${scneario} | ${attempt} | ${gpt_score} | ${gpt_justification} | ${ionos_score} | ${ionos_justification} | ${metadata_score} |\n`;
+    markdownOutput += `| ${scenario} | ${attempt} | ${gpt_score} | ${gpt_justification} | ${ionos_score} | ${ionos_justification} | ${metadata_score} |\n`;
   });
 
   return markdownOutput;

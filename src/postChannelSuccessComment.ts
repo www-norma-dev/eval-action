@@ -19,7 +19,6 @@ import { Context } from '@actions/github/lib/context';
 export async function postChannelSuccessComment(
   github: InstanceType<typeof GitHub>,
   context: Context,
-  result: string,
   commit: string,
   api_host: string,
   type: string,
@@ -35,7 +34,6 @@ export async function postChannelSuccessComment(
 - **API Host:** \`${api_host}\`
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
-**Result:** ${result}  
 
 <sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
 
