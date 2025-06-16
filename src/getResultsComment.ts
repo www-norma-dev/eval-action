@@ -17,6 +17,9 @@ export async function getResultsComment(
 
   console.log("getResultComment.ts -- params:", user_id, project_id, batch_id)
 
+  console.log('⏳ Waiting 5 minutes before fetching batch results...');
+  await new Promise(res => setTimeout(res, 300000)); // 5 minutes
+
   const maxAttempts = 10;
   const delayMs = 100000; // 10 mins
   let attempt = 0;
@@ -32,11 +35,7 @@ export async function getResultsComment(
       if (response.status === 200 && response.data?.results?.scenarios) {
         console.log(`✅ Results found on attempt ${attempt + 1}`);
         break;
-      }
-      if (response.status === 500 ) {
-        console.log(`⏳ Results not ready yet (attempt ${attempt + 1})... (status ${status})`);
-      }
-      
+      } 
     } catch (err: any) {
       if (err.response?.status === 404 || err.response?.status === 405) {
         console.log(`⏳ Results not ready yet (attempt ${attempt + 1})...`);

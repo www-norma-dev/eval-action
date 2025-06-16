@@ -36097,6 +36097,8 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
     console.log("getResultComment.ts -- params:", user_id, project_id, batch_id);
+    console.log('⏳ Waiting 5 minutes before fetching batch results...');
+    await new Promise(res => setTimeout(res, 300000)); // 5 minutes
     const maxAttempts = 10;
     const delayMs = 100000; // 10 mins
     let attempt = 0;
@@ -36110,9 +36112,6 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
             if (response.status === 200 && ((_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.results) === null || _b === void 0 ? void 0 : _b.scenarios)) {
                 console.log(`✅ Results found on attempt ${attempt + 1}`);
                 break;
-            }
-            if (response.status === 500) {
-                console.log(`⏳ Results not ready yet (attempt ${attempt + 1})... (status ${status})`);
             }
         }
         catch (err) {
