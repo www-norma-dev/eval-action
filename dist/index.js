@@ -36249,6 +36249,7 @@ const https_1 = __importDefault(__nccwpck_require__(5692));
 const node_abort_controller_1 = __nccwpck_require__(4470);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
 async function run() {
+    var _a;
     try {
         const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
         if (!token) {
@@ -36317,7 +36318,7 @@ async function run() {
                 attempts
             };
             console.log('----------- THIS IS THE URL -----------');
-            const url = "https://evap-app-api-service-dev-966286810479.europe-west1.run.app";
+            const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
             console.log(url);
             console.log('--------- postData --------');
             console.log(postData);
@@ -36350,7 +36351,9 @@ async function run() {
         }
         const apiResponse = response.data;
         (0, core_1.startGroup)('API Response');
+        const batchId = (_a = response.request) === null || _a === void 0 ? void 0 : _a.batchId;
         console.log("✅ API Response Received:", apiResponse);
+        console.log("batchID from ingest event:", batchId);
         (0, core_1.endGroup)();
         // Convert the API response to a markdown table
         const md = convertJsonToMarkdownTable(apiResponse.rawResults);

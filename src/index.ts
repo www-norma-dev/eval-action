@@ -95,7 +95,7 @@ async function run(): Promise<void> {
         attempts
       };
       console.log('----------- THIS IS THE URL -----------');
-      const url = "https://evap-app-api-service-dev-966286810479.europe-west1.run.app";
+      const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
       console.log(url);
       console.log('--------- postData --------');
       console.log(postData);
@@ -135,7 +135,9 @@ async function run(): Promise<void> {
 
     const apiResponse: any = response.data;
     startGroup('API Response');
+    const batchId = response.request?.batchId
     console.log("✅ API Response Received:", apiResponse);
+    console.log("batchID from ingest event:", batchId);
     endGroup();
 
     // Convert the API response to a markdown table
