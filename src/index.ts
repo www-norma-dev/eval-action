@@ -189,15 +189,19 @@ export function convertJsonToMarkdownTable(scenarios: any[]): string {
 
   for (const scenario of scenarios) {
     const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
-    const average = scenario.averageScores || {};
+    const average = scenario.averageScores || {}; // scores
+    const justifications = scenario.globalJustification || {}; // justifications
 
-    // 👇 Nouveau : on ajoute une seule ligne même sans "attempts"
     rows.push([
       scenarioName,
       '-', // no attempt ID
       `${average.openai ?? 'N/A'}`,
-      '-', // no GPT justification
+      '-',
+      `${justifications.openaiJustificationSummary ?? 'N/A'}`,
+      '-',
       `${average.ionos ?? 'N/A'}`,
+      '-', // no GPT justification
+      `${justifications.ionosJustificationSummary ?? 'N/A'}`,
       '-', // no Ionos justification
       `${average.metadata ?? 'N/A'}`
     ]);

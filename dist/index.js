@@ -36373,7 +36373,7 @@ async function run() {
     }
 }
 function convertJsonToMarkdownTable(scenarios) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     if (!Array.isArray(scenarios)) {
         return '❌ No scenario data available.';
     }
@@ -36389,16 +36389,20 @@ function convertJsonToMarkdownTable(scenarios) {
     const rows = [];
     for (const scenario of scenarios) {
         const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
-        const average = scenario.averageScores || {};
-        // 👇 Nouveau : on ajoute une seule ligne même sans "attempts"
+        const average = scenario.averageScores || {}; // scores
+        const justifications = scenario.globalJustification || {}; // justifications
         rows.push([
             scenarioName,
             '-',
             `${(_a = average.openai) !== null && _a !== void 0 ? _a : 'N/A'}`,
             '-',
-            `${(_b = average.ionos) !== null && _b !== void 0 ? _b : 'N/A'}`,
+            `${(_b = justifications.openaiJustificationSummary) !== null && _b !== void 0 ? _b : 'N/A'}`,
             '-',
-            `${(_c = average.metadata) !== null && _c !== void 0 ? _c : 'N/A'}`
+            `${(_c = average.ionos) !== null && _c !== void 0 ? _c : 'N/A'}`,
+            '-',
+            `${(_d = justifications.ionosJustificationSummary) !== null && _d !== void 0 ? _d : 'N/A'}`,
+            '-',
+            `${(_e = average.metadata) !== null && _e !== void 0 ? _e : 'N/A'}`
         ]);
     }
     const markdown = [
