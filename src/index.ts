@@ -170,7 +170,13 @@ async function run(): Promise<void> {
   }
 }
 
-export function convertJsonToMarkdownTable(scenarios: any[]): string {
+export function convertJsonToMarkdownTable(
+  scenarios: any[],
+  globalJustification: {
+    openaiJustificationSummary?: string[],
+    ionosJustificationSummary?: string[]
+  } = {}
+): string {
   if (!Array.isArray(scenarios)) {
     return '❌ No scenario data available.';
   }
@@ -187,25 +193,23 @@ export function convertJsonToMarkdownTable(scenarios: any[]): string {
 
   const rows: string[][] = [];
 
-  for (const scenario of scenarios) {
+  scenarios.forEach((scenario, index) => {
     const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
-    const average = scenario.averageScores || {}; // scores
-    const justifications = scenario.globalJustification || {}; // justifications
+    const average = scenario.averageScores || {};
+
+    const gptJustification = globalJustification.openaiJustificationSummary?.[index] ?? '-';
+    const ionosJustification = globalJustification.ionosJustificationSummary?.[index] ?? '-';
 
     rows.push([
       scenarioName,
       '-', // no attempt ID
       `${average.openai ?? 'N/A'}`,
-      '-',
-      `${justifications.openaiJustificationSummary ?? 'N/A'}`,
-      '-',
+      gptJustification,
       `${average.ionos ?? 'N/A'}`,
-      '-', // no GPT justification
-      `${justifications.ionosJustificationSummary ?? 'N/A'}`,
-      '-', // no Ionos justification
+      ionosJustification,
       `${average.metadata ?? 'N/A'}`
     ]);
-  }
+  });
 
   const markdown = [
     '| ' + headers.join(' | ') + ' |',
@@ -213,7 +217,7 @@ export function convertJsonToMarkdownTable(scenarios: any[]): string {
     ...rows.map(row => '| ' + row.map(cell => cell.toString().replace(/\n/g, ' ')).join(' | ') + ' |')
   ].join('\n');
 
-  return `\n${markdown}`;
+  return `### Conversation Logs\n${markdown}`;
 }
 
 

@@ -35,7 +35,10 @@ export async function getResultsComment(
 
       if (response.status === 200 && response.data?.results?.scenarios) {
         console.log('📦 Raw scenarios:', JSON.stringify(response.data.results.scenarios, null, 2));
-        markdownResults = convertJsonToMarkdownTable(response.data.results.scenarios);
+        markdownResults = convertJsonToMarkdownTable(
+          response.data.results.scenarios,
+          response.data.results.globalJustification
+        );
         console.log('--- Markdown table results:', markdownResults);
 
         console.log(`✅ Results found on attempt ${attempt + 1}`);

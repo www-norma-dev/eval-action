@@ -36113,7 +36113,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
             });
             if (response.status === 200 && ((_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.results) === null || _b === void 0 ? void 0 : _b.scenarios)) {
                 console.log('📦 Raw scenarios:', JSON.stringify(response.data.results.scenarios, null, 2));
-                markdownResults = (0, _1.convertJsonToMarkdownTable)(response.data.results.scenarios);
+                markdownResults = (0, _1.convertJsonToMarkdownTable)(response.data.results.scenarios, response.data.results.globalJustification);
                 console.log('--- Markdown table results:', markdownResults);
                 console.log(`✅ Results found on attempt ${attempt + 1}`);
                 break;
@@ -36372,8 +36372,7 @@ async function run() {
         core.setFailed(`❌ Action failed: ${error.message}`);
     }
 }
-function convertJsonToMarkdownTable(scenarios) {
-    var _a, _b, _c, _d, _e;
+function convertJsonToMarkdownTable(scenarios, globalJustification = {}) {
     if (!Array.isArray(scenarios)) {
         return '❌ No scenario data available.';
     }
@@ -36387,30 +36386,28 @@ function convertJsonToMarkdownTable(scenarios) {
         'Metadata Score',
     ];
     const rows = [];
-    for (const scenario of scenarios) {
+    scenarios.forEach((scenario, index) => {
+        var _a, _b, _c, _d, _e, _f, _g;
         const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
-        const average = scenario.averageScores || {}; // scores
-        const justifications = scenario.globalJustification || {}; // justifications
+        const average = scenario.averageScores || {};
+        const gptJustification = (_b = (_a = globalJustification.openaiJustificationSummary) === null || _a === void 0 ? void 0 : _a[index]) !== null && _b !== void 0 ? _b : '-';
+        const ionosJustification = (_d = (_c = globalJustification.ionosJustificationSummary) === null || _c === void 0 ? void 0 : _c[index]) !== null && _d !== void 0 ? _d : '-';
         rows.push([
             scenarioName,
             '-',
-            `${(_a = average.openai) !== null && _a !== void 0 ? _a : 'N/A'}`,
-            '-',
-            `${(_b = justifications.openaiJustificationSummary) !== null && _b !== void 0 ? _b : 'N/A'}`,
-            '-',
-            `${(_c = average.ionos) !== null && _c !== void 0 ? _c : 'N/A'}`,
-            '-',
-            `${(_d = justifications.ionosJustificationSummary) !== null && _d !== void 0 ? _d : 'N/A'}`,
-            '-',
-            `${(_e = average.metadata) !== null && _e !== void 0 ? _e : 'N/A'}`
+            `${(_e = average.openai) !== null && _e !== void 0 ? _e : 'N/A'}`,
+            gptJustification,
+            `${(_f = average.ionos) !== null && _f !== void 0 ? _f : 'N/A'}`,
+            ionosJustification,
+            `${(_g = average.metadata) !== null && _g !== void 0 ? _g : 'N/A'}`
         ]);
-    }
+    });
     const markdown = [
         '| ' + headers.join(' | ') + ' |',
         '| ' + headers.map(() => '---').join(' | ') + ' |',
         ...rows.map(row => '| ' + row.map(cell => cell.toString().replace(/\n/g, ' ')).join(' | ') + ' |')
     ].join('\n');
-    return `\n${markdown}`;
+    return `### Conversation Logs\n${markdown}`;
 }
 exports.convertJsonToMarkdownTable = convertJsonToMarkdownTable;
 function formatTableForConsole(jsonData) {
