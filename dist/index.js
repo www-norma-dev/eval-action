@@ -36134,14 +36134,14 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     try {
         const resultData = response.data;
         console.log("GET results content:", response.data);
-        const dashboardUrl = resultData === null || resultData === void 0 ? void 0 : resultData.url;
+        const dashboardUrl = `https://eval-norma--norma-dev.europe-west4.hosted.app/dashboard/projects/${project_id}/batch/${batch_id}/multiAgent`;
         const commentMarker = '<!-- norma-eval-get-comment -->';
         const commentBody = `${commentMarker}
-  ### ✅ Fetched Evaluation Results
+  ### ✅ Fetched evaluation results
   - **User ID:** \`${user_id}\`
   - **Project ID:** \`${project_id}\`
   - **Batch ID:** \`${batch_id}\`
-  Check results in the dashboard: \`${dashboardUrl}\`
+  Check results in the dashboard:[url](${dashboardUrl})
   
   
   <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
@@ -36549,7 +36549,7 @@ exports.postChannelSuccessComment = postChannelSuccessComment;
 async function postChannelComment(github, context, vla_endpoint, type, test_name) {
     (0, core_1.startGroup)('Commenting on PR');
     try {
-        const commentMarker = '<!-- norma-eval-comment -->';
+        const commentMarker = '<!-- norma-eval-post-comment -->';
         const commentBody = `${commentMarker}
 ### 🚀 Automatic Evaluation Report
 - **API Host:** \`${vla_endpoint}\`

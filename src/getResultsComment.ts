@@ -58,15 +58,15 @@ export async function getResultsComment(
   try {
     const resultData = response.data;
     console.log("GET results content:", response.data )
-    const dashboardUrl = resultData?.url;    
+    const dashboardUrl = `https://eval-norma--norma-dev.europe-west4.hosted.app/dashboard/projects/${project_id}/batch/${batch_id}/multiAgent`;
   
   const commentMarker = '<!-- norma-eval-get-comment -->';
   const commentBody = `${commentMarker}
-  ### ✅ Fetched Evaluation Results
+  ### ✅ Fetched evaluation results
   - **User ID:** \`${user_id}\`
   - **Project ID:** \`${project_id}\`
   - **Batch ID:** \`${batch_id}\`
-  Check results in the dashboard: \`${dashboardUrl}\`
+  Check results in the dashboard:[url](${dashboardUrl})
   
   
   <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
