@@ -35,7 +35,6 @@ export async function postChannelSuccessComment(
 - **API Host:** \`${api_host}\`
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
-- **EVAL Result:** [url](${report_url})
 **Result:** ${result}  
 
 <sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>

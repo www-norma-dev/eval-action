@@ -1,8 +1,8 @@
-import { endGroup, startGroup, info, error, setFailed } from '@actions/core';
+import { endGroup, startGroup, info, error, setFailed, markdownSummary } from '@actions/core';
 import type { GitHub } from '@actions/github/lib/utils';
 import { Context } from '@actions/github/lib/context';
 import axios from 'axios';
-
+import { convertJsonToMarkdownTable } from '.';
 export async function getResultsComment(
   github: InstanceType<typeof GitHub>,
   context: Context,
@@ -24,6 +24,7 @@ export async function getResultsComment(
   const delayMs = 100000; // 10 mins
   let attempt = 0;
   let response;
+  let markdownResults = ''
 
   // 🔁 Polling loop
   while (attempt < maxAttempts) {
@@ -33,6 +34,9 @@ export async function getResultsComment(
       });
 
       if (response.status === 200 && response.data?.results?.scenarios) {
+        markdownResults = convertJsonToMarkdownTable(response.data.results.scenarios);
+        console.log('--- Markdown table results:', markdownResults);
+
         console.log(`✅ Results found on attempt ${attempt + 1}`);
         break;
       } 
@@ -59,14 +63,15 @@ export async function getResultsComment(
     const resultData = response.data;
     console.log("GET results content:", response.data )
     const dashboardUrl = `https://eval-norma--norma-dev.europe-west4.hosted.app/dashboard/projects/${project_id}/batch/${batch_id}/multiAgent`;
-  
-  const commentMarker = '<!-- norma-eval-get-comment -->';
-  const commentBody = `${commentMarker}
+
+    const commentMarker = '<!-- norma-eval-get-comment -->';
+    const commentBody = `${commentMarker}
   ### ✅ Fetched evaluation results
   - **User ID:** \`${user_id}\`
   - **Project ID:** \`${project_id}\`
   - **Batch ID:** \`${batch_id}\`
-  Check results in the dashboard:[url](${dashboardUrl})
+  **Check results in the dashboard**:[url](${dashboardUrl})
+  **Results table:**\n\n${markdownResults}
   
   
   <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>

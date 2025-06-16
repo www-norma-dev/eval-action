@@ -141,8 +141,8 @@ async function run(): Promise<void> {
     endGroup();
 
     // Convert the API response to a markdown table
-    const md = convertJsonToMarkdownTable(apiResponse.rawResults);
-    console.log(formatTableForConsole(apiResponse.rawResults));
+    const md = convertJsonToMarkdownTable(apiResponse.results);
+    console.log(formatTableForConsole(apiResponse.results));
 
     // Use the current commit SHA as the commit identifier
     const commit = process.env.GITHUB_SHA || 'N/A';
@@ -175,7 +175,7 @@ async function run(): Promise<void> {
   }
 }
 
-function convertJsonToMarkdownTable(jsonData: any): string {
+export function convertJsonToMarkdownTable(jsonData: any): string {
   if (!Array.isArray(jsonData)) {
     console.log("JSON data received:", jsonData)
     console.error("❌ convertJsonToMarkdownTable: Expected array but got:", jsonData);

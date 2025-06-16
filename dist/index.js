@@ -36091,6 +36091,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getResultsComment = void 0;
 const core_1 = __nccwpck_require__(7484);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
+const _1 = __nccwpck_require__(9407);
 async function getResultsComment(github, context, user_id, project_id, batch_id) {
     var _a, _b, _c, _d, _e;
     (0, core_1.startGroup)('Fetching results and commenting on PR');
@@ -36103,6 +36104,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     const delayMs = 100000; // 10 mins
     let attempt = 0;
     let response;
+    let markdownResults = '';
     // 🔁 Polling loop
     while (attempt < maxAttempts) {
         try {
@@ -36110,6 +36112,8 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
                 headers: { 'Content-Type': 'application/json' }
             });
             if (response.status === 200 && ((_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.results) === null || _b === void 0 ? void 0 : _b.scenarios)) {
+                markdownResults = (0, _1.convertJsonToMarkdownTable)(response.data.results.scenarios);
+                console.log('--- Markdown table results:', markdownResults);
                 console.log(`✅ Results found on attempt ${attempt + 1}`);
                 break;
             }
@@ -36141,7 +36145,8 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
   - **User ID:** \`${user_id}\`
   - **Project ID:** \`${project_id}\`
   - **Batch ID:** \`${batch_id}\`
-  Check results in the dashboard:[url](${dashboardUrl})
+  **Check results in the dashboard**:[url](${dashboardUrl})
+  **Markdown table of results:**\n\n${markdownResults}
   
   
   <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
@@ -36238,6 +36243,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.convertJsonToMarkdownTable = void 0;
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const postChannelSuccessComment_1 = __nccwpck_require__(3278);
@@ -36355,8 +36361,8 @@ async function run() {
         console.log("batchID from ingest event:", batchId);
         (0, core_1.endGroup)();
         // Convert the API response to a markdown table
-        const md = convertJsonToMarkdownTable(apiResponse.rawResults);
-        console.log(formatTableForConsole(apiResponse.rawResults));
+        const md = convertJsonToMarkdownTable(apiResponse.results);
+        console.log(formatTableForConsole(apiResponse.results));
         // Use the current commit SHA as the commit identifier
         const commit = process.env.GITHUB_SHA || 'N/A';
         // Call the function to post or update the PR comment
@@ -36409,6 +36415,7 @@ function convertJsonToMarkdownTable(jsonData) {
     });
     return markdownOutput;
 }
+exports.convertJsonToMarkdownTable = convertJsonToMarkdownTable;
 function formatTableForConsole(jsonData) {
     if (!Array.isArray(jsonData) || jsonData.length === 0) {
         console.warn("⚠️ formatTableForConsole: No valid results to format:", jsonData);
@@ -36459,7 +36466,6 @@ async function postChannelSuccessComment(github, context, result, commit, api_ho
 - **API Host:** \`${api_host}\`
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
-- **EVAL Result:** [url](${report_url})
 **Result:** ${result}  
 
 <sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
