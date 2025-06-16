@@ -36373,7 +36373,7 @@ async function run() {
     }
 }
 function convertJsonToMarkdownTable(scenarios) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+    var _a, _b, _c;
     if (!Array.isArray(scenarios)) {
         return '❌ No scenario data available.';
     }
@@ -36388,30 +36388,18 @@ function convertJsonToMarkdownTable(scenarios) {
     ];
     const rows = [];
     for (const scenario of scenarios) {
-        console.log('🔹 scenario:', JSON.stringify(scenario, null, 2));
-        if (!Array.isArray(scenario.attempts)) {
-            console.warn('⚠️ Missing attempts:', scenario);
-        }
         const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
-        if (!Array.isArray(scenario.attempts))
-            continue;
-        for (const attempt of scenario.attempts) {
-            const gptScore = (_b = (_a = attempt.openaiReplyEvaluation) === null || _a === void 0 ? void 0 : _a.match_level) !== null && _b !== void 0 ? _b : 'N/A';
-            const gptJustification = (_d = (_c = attempt.openaiReplyEvaluation) === null || _c === void 0 ? void 0 : _c.justification) !== null && _d !== void 0 ? _d : 'N/A';
-            const ionosScore = (_f = (_e = attempt.ionosReplyEvaluation) === null || _e === void 0 ? void 0 : _e.match_level) !== null && _f !== void 0 ? _f : 'N/A';
-            const ionosJustification = (_h = (_g = attempt.ionosReplyEvaluation) === null || _g === void 0 ? void 0 : _g.justification) !== null && _h !== void 0 ? _h : 'N/A';
-            const metadataScore = (_j = attempt.extractedMetadataEvaluation) !== null && _j !== void 0 ? _j : 'N/A';
-            const attemptId = (_k = attempt.attemptId) !== null && _k !== void 0 ? _k : 'N/A';
-            rows.push([
-                scenarioName,
-                `${attemptId}`,
-                `${gptScore}`,
-                gptJustification,
-                `${ionosScore}`,
-                ionosJustification,
-                `${metadataScore}`
-            ]);
-        }
+        const average = scenario.averageScores || {};
+        // 👇 Nouveau : on ajoute une seule ligne même sans "attempts"
+        rows.push([
+            scenarioName,
+            '-',
+            `${(_a = average.openai) !== null && _a !== void 0 ? _a : 'N/A'}`,
+            '-',
+            `${(_b = average.ionos) !== null && _b !== void 0 ? _b : 'N/A'}`,
+            '-',
+            `${(_c = average.metadata) !== null && _c !== void 0 ? _c : 'N/A'}`
+        ]);
     }
     const markdown = [
         '| ' + headers.join(' | ') + ' |',
@@ -36473,9 +36461,6 @@ async function postChannelSuccessComment(github, context, commit, api_host, type
 - **Test Name:** \`${test_name}\`
 
 <sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
-
-<sub>🔄 _This comment was posted automatically by [Eval Action](${report_url})._</sub>
-url ${report_url}
 `;
         const { owner, repo } = context.repo;
         let prNumber;

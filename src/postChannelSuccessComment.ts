@@ -36,9 +36,6 @@ export async function postChannelSuccessComment(
 - **Test Name:** \`${test_name}\`
 
 <sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
-
-<sub>🔄 _This comment was posted automatically by [Eval Action](${report_url})._</sub>
-url ${report_url}
 `;
 
     const { owner, repo } = context.repo;

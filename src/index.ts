@@ -188,34 +188,19 @@ export function convertJsonToMarkdownTable(scenarios: any[]): string {
   const rows: string[][] = [];
 
   for (const scenario of scenarios) {
-    console.log('🔹 scenario:', JSON.stringify(scenario, null, 2));
-  if (!Array.isArray(scenario.attempts)) {
-    console.warn('⚠️ Missing attempts:', scenario);
-  }
-
-
     const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
+    const average = scenario.averageScores || {};
 
-    if (!Array.isArray(scenario.attempts)) continue;
-
-    for (const attempt of scenario.attempts) {
-      const gptScore = attempt.openaiReplyEvaluation?.match_level ?? 'N/A';
-      const gptJustification = attempt.openaiReplyEvaluation?.justification ?? 'N/A';
-      const ionosScore = attempt.ionosReplyEvaluation?.match_level ?? 'N/A';
-      const ionosJustification = attempt.ionosReplyEvaluation?.justification ?? 'N/A';
-      const metadataScore = attempt.extractedMetadataEvaluation ?? 'N/A';
-      const attemptId = attempt.attemptId ?? 'N/A';
-
-      rows.push([
-        scenarioName,
-        `${attemptId}`,
-        `${gptScore}`,
-        gptJustification,
-        `${ionosScore}`,
-        ionosJustification,
-        `${metadataScore}`
-      ]);
-    }
+    // 👇 Nouveau : on ajoute une seule ligne même sans "attempts"
+    rows.push([
+      scenarioName,
+      '-', // no attempt ID
+      `${average.openai ?? 'N/A'}`,
+      '-', // no GPT justification
+      `${average.ionos ?? 'N/A'}`,
+      '-', // no Ionos justification
+      `${average.metadata ?? 'N/A'}`
+    ]);
   }
 
   const markdown = [
