@@ -170,40 +170,58 @@ async function run(): Promise<void> {
   }
 }
 
-export function convertJsonToMarkdownTable(resultAttempts: any[]): string {
-  if (!Array.isArray(resultAttempts)) {
-    console.error("❌ convertJsonToMarkdownTable: Expected array but got:", resultAttempts);
-    return "Invalid data format received for markdown conversion.";
+export function convertJsonToMarkdownTable(scenarios: any[]): string {
+  if (!Array.isArray(scenarios)) {
+    return '❌ No scenario data available.';
   }
 
-  let markdown = "Conversation Logs\n\n";
-  markdown += "| Scenario | Attempt | GPT Score | GPT Justification | Ionos Score | Ionos Justification | Metadata Score |\n";
-  markdown += "|----------|---------|-----------|-------------------|-------------|----------------------|----------------|\n";
+  const headers = [
+    'Scenario',
+    'Attempt',
+    'GPT Score',
+    'GPT Justification',
+    'Ionos Score',
+    'Ionos Justification',
+    'Metadata Score',
+  ];
 
-  resultAttempts.forEach((result: any) => {
-    const scenarioName = result.scenarioName || "Unknown results";
-    const attempts = result.attempts || [];
+  const rows: string[][] = [];
 
-    attempts.forEach((attempt: any) => {
-      const attemptId = attempt.attemptId ?? "N/A";
+  for (const scenario of scenarios) {
+    const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
 
-      const gptEval = attempt.openaiReplyEvaluation || {};
-      const gptScore = gptEval.match_level !== undefined ? `${gptEval.match_level * 100}%` : "--";
-      const gptJustification = gptEval.justification || "--";
+    if (!Array.isArray(scenario.attempts)) continue;
 
-      const ionosEval = attempt.ionosReplyEvaluation || {};
-      const ionosScore = ionosEval.match_level !== undefined ? `${ionosEval.match_level * 100}%` : "--";
-      const ionosJustification = ionosEval.justification || "--";
+    for (const attempt of scenario.attempts) {
+      const gptScore = attempt.openaiReplyEvaluation?.match_level ?? 'N/A';
+      const gptJustification = attempt.openaiReplyEvaluation?.justification ?? 'N/A';
+      const ionosScore = attempt.ionosReplyEvaluation?.match_level ?? 'N/A';
+      const ionosJustification = attempt.ionosReplyEvaluation?.justification ?? 'N/A';
+      const metadataScore = attempt.extractedMetadataEvaluation ?? 'N/A';
+      const attemptId = attempt.attemptId ?? 'N/A';
 
-      const extractedEval = attempt.evaluationResults?.extractedMetadataEvaluation;
-      const metadataScore = extractedEval !== undefined ? `${extractedEval * 100}%` : "--";
+      rows.push([
+        scenarioName,
+        `${attemptId}`,
+        `${gptScore}`,
+        gptJustification,
+        `${ionosScore}`,
+        ionosJustification,
+        `${metadataScore}`
+      ]);
+    }
+  }
 
-      markdown += `| ${scenarioName} | ${attemptId} | ${gptScore} | ${gptJustification} | ${ionosScore} | ${ionosJustification} | ${metadataScore} |\n`;
-    });
-  });
+  // Construction du tableau Markdown
+  const markdown = [
+    '| ' + headers.join(' | ') + ' |',
+    '| ' + headers.map(() => '---').join(' | ') + ' |',
+    ...rows.map(row => '| ' + row.map(cell => cell.toString().replace(/\n/g, ' ')).join(' | ') + ' |')
+  ].join('\n');
 
-  return markdown;
+  return `### Conversation Logs\n\n${markdown}`;
 }
+
 
 
 function formatTableForConsole(jsonData: any[]): string {

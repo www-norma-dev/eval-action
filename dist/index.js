@@ -36098,7 +36098,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
     console.log("getResultComment.ts -- params:", user_id, project_id, batch_id);
-    console.log('⏳ Waiting 5 minutes before fetching batch results...');
+    console.log('⏳ Waiting 5 minutes to let batch run finish and fetch results...');
     await new Promise(res => setTimeout(res, 300000)); // 5 minutes
     const maxAttempts = 10;
     const delayMs = 100000; // 10 mins
@@ -36371,32 +36371,50 @@ async function run() {
         core.setFailed(`❌ Action failed: ${error.message}`);
     }
 }
-function convertJsonToMarkdownTable(resultAttempts) {
-    if (!Array.isArray(resultAttempts)) {
-        console.error("❌ convertJsonToMarkdownTable: Expected array but got:", resultAttempts);
-        return "Invalid data format received for markdown conversion.";
+function convertJsonToMarkdownTable(scenarios) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+    if (!Array.isArray(scenarios)) {
+        return '❌ No scenario data available.';
     }
-    let markdown = "Conversation Logs\n\n";
-    markdown += "| Scenario | Attempt | GPT Score | GPT Justification | Ionos Score | Ionos Justification | Metadata Score |\n";
-    markdown += "|----------|---------|-----------|-------------------|-------------|----------------------|----------------|\n";
-    resultAttempts.forEach((result) => {
-        const scenarioName = result.scenarioName || "Unknown results";
-        const attempts = result.attempts || [];
-        attempts.forEach((attempt) => {
-            var _a, _b;
-            const attemptId = (_a = attempt.attemptId) !== null && _a !== void 0 ? _a : "N/A";
-            const gptEval = attempt.openaiReplyEvaluation || {};
-            const gptScore = gptEval.match_level !== undefined ? `${gptEval.match_level * 100}%` : "--";
-            const gptJustification = gptEval.justification || "--";
-            const ionosEval = attempt.ionosReplyEvaluation || {};
-            const ionosScore = ionosEval.match_level !== undefined ? `${ionosEval.match_level * 100}%` : "--";
-            const ionosJustification = ionosEval.justification || "--";
-            const extractedEval = (_b = attempt.evaluationResults) === null || _b === void 0 ? void 0 : _b.extractedMetadataEvaluation;
-            const metadataScore = extractedEval !== undefined ? `${extractedEval * 100}%` : "--";
-            markdown += `| ${scenarioName} | ${attemptId} | ${gptScore} | ${gptJustification} | ${ionosScore} | ${ionosJustification} | ${metadataScore} |\n`;
-        });
-    });
-    return markdown;
+    const headers = [
+        'Scenario',
+        'Attempt',
+        'GPT Score',
+        'GPT Justification',
+        'Ionos Score',
+        'Ionos Justification',
+        'Metadata Score',
+    ];
+    const rows = [];
+    for (const scenario of scenarios) {
+        const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
+        if (!Array.isArray(scenario.attempts))
+            continue;
+        for (const attempt of scenario.attempts) {
+            const gptScore = (_b = (_a = attempt.openaiReplyEvaluation) === null || _a === void 0 ? void 0 : _a.match_level) !== null && _b !== void 0 ? _b : 'N/A';
+            const gptJustification = (_d = (_c = attempt.openaiReplyEvaluation) === null || _c === void 0 ? void 0 : _c.justification) !== null && _d !== void 0 ? _d : 'N/A';
+            const ionosScore = (_f = (_e = attempt.ionosReplyEvaluation) === null || _e === void 0 ? void 0 : _e.match_level) !== null && _f !== void 0 ? _f : 'N/A';
+            const ionosJustification = (_h = (_g = attempt.ionosReplyEvaluation) === null || _g === void 0 ? void 0 : _g.justification) !== null && _h !== void 0 ? _h : 'N/A';
+            const metadataScore = (_j = attempt.extractedMetadataEvaluation) !== null && _j !== void 0 ? _j : 'N/A';
+            const attemptId = (_k = attempt.attemptId) !== null && _k !== void 0 ? _k : 'N/A';
+            rows.push([
+                scenarioName,
+                `${attemptId}`,
+                `${gptScore}`,
+                gptJustification,
+                `${ionosScore}`,
+                ionosJustification,
+                `${metadataScore}`
+            ]);
+        }
+    }
+    // Construction du tableau Markdown
+    const markdown = [
+        '| ' + headers.join(' | ') + ' |',
+        '| ' + headers.map(() => '---').join(' | ') + ' |',
+        ...rows.map(row => '| ' + row.map(cell => cell.toString().replace(/\n/g, ' ')).join(' | ') + ' |')
+    ].join('\n');
+    return `### Conversation Logs\n\n${markdown}`;
 }
 exports.convertJsonToMarkdownTable = convertJsonToMarkdownTable;
 function formatTableForConsole(jsonData) {
