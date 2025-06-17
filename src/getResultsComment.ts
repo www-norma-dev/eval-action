@@ -30,17 +30,28 @@ export async function getResultsComment(
         headers: { 'Content-Type': 'application/json' }
       });
 
-      if (response.status === 200 && response.data?.results?.scenarios) {
-        console.log('📦 Raw scenarios:', JSON.stringify(response.data.results.scenarios, null, 2));
-        markdownResults = convertJsonToMarkdownTable(
-          response.data.results.scenarios,
-          response.data.results.globalJustification
-        );
-        console.log('--- Markdown table results:', markdownResults);
+      const status = response.data?.status;
+      console.log(`⏳ Attempt ${attempt + 1} | Batch status: ${status}`);
 
-        console.log(`✅ Results found on attempt ${attempt + 1}`);
-        break;
-      } 
+      if (status === 'complete') {
+        const scenarios = response.data?.results?.scenarios;
+        if (scenarios && scenarios.length > 0) {
+          console.log('📦 Raw scenarios:', JSON.stringify(scenarios, null, 2));
+          markdownResults = convertJsonToMarkdownTable(
+            scenarios,
+            response.data.results.globalJustification
+          );
+          console.log('✅ Results ready and formatted.');
+          break;
+        } else {
+          console.log('⚠️ Status is "complete" but no scenarios found yet.');
+        }
+      } else if (status === 'failed') {
+        setFailed('❌ Batch processing failed.');
+        return;
+      } else {
+        console.log(`⏳ Status is "${status}". Waiting...`);
+      }
     } catch (err: any) {
       if (err.response?.status === 404 || err.response?.status === 405) {
         console.log(`⏳ Results not ready yet (attempt ${attempt + 1})...`);
@@ -54,14 +65,13 @@ export async function getResultsComment(
     await new Promise(res => setTimeout(res, delayMs));
   }
 
-  if (!response || response.status !== 200) {
-    setFailed(`❌ Failed to fetch results after ${maxAttempts} attempts.`);
+  if (!response || response.status !== 200 || !markdownResults) {
+    setFailed(`❌ Failed to fetch valid results after ${maxAttempts} attempts.`);
     return;
   }
 
   // ✅ Process and post the comment
   try {
-    const resultData = response.data;
     console.log("GET results content:", response.data )
     const dashboardUrl = `https://eval-norma--norma-dev.europe-west4.hosted.app/dashboard/projects/${project_id}/batch/${batch_id}/multiAgent`;
 

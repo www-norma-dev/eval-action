@@ -36093,7 +36093,7 @@ const core_1 = __nccwpck_require__(7484);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
 const _1 = __nccwpck_require__(9407);
 async function getResultsComment(github, context, user_id, project_id, batch_id) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     (0, core_1.startGroup)('Fetching results and commenting on PR');
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
@@ -36109,16 +36109,30 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
             response = await axios_1.default.get(url, {
                 headers: { 'Content-Type': 'application/json' }
             });
-            if (response.status === 200 && ((_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.results) === null || _b === void 0 ? void 0 : _b.scenarios)) {
-                console.log('📦 Raw scenarios:', JSON.stringify(response.data.results.scenarios, null, 2));
-                markdownResults = (0, _1.convertJsonToMarkdownTable)(response.data.results.scenarios, response.data.results.globalJustification);
-                console.log('--- Markdown table results:', markdownResults);
-                console.log(`✅ Results found on attempt ${attempt + 1}`);
-                break;
+            const status = (_a = response.data) === null || _a === void 0 ? void 0 : _a.status;
+            console.log(`⏳ Attempt ${attempt + 1} | Batch status: ${status}`);
+            if (status === 'complete') {
+                const scenarios = (_c = (_b = response.data) === null || _b === void 0 ? void 0 : _b.results) === null || _c === void 0 ? void 0 : _c.scenarios;
+                if (scenarios && scenarios.length > 0) {
+                    console.log('📦 Raw scenarios:', JSON.stringify(scenarios, null, 2));
+                    markdownResults = (0, _1.convertJsonToMarkdownTable)(scenarios, response.data.results.globalJustification);
+                    console.log('✅ Results ready and formatted.');
+                    break;
+                }
+                else {
+                    console.log('⚠️ Status is "complete" but no scenarios found yet.');
+                }
+            }
+            else if (status === 'failed') {
+                (0, core_1.setFailed)('❌ Batch processing failed.');
+                return;
+            }
+            else {
+                console.log(`⏳ Status is "${status}". Waiting...`);
             }
         }
         catch (err) {
-            if (((_c = err.response) === null || _c === void 0 ? void 0 : _c.status) === 404 || ((_d = err.response) === null || _d === void 0 ? void 0 : _d.status) === 405) {
+            if (((_d = err.response) === null || _d === void 0 ? void 0 : _d.status) === 404 || ((_e = err.response) === null || _e === void 0 ? void 0 : _e.status) === 405) {
                 console.log(`⏳ Results not ready yet (attempt ${attempt + 1})...`);
             }
             else {
@@ -36129,13 +36143,12 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
         attempt++;
         await new Promise(res => setTimeout(res, delayMs));
     }
-    if (!response || response.status !== 200) {
-        (0, core_1.setFailed)(`❌ Failed to fetch results after ${maxAttempts} attempts.`);
+    if (!response || response.status !== 200 || !markdownResults) {
+        (0, core_1.setFailed)(`❌ Failed to fetch valid results after ${maxAttempts} attempts.`);
         return;
     }
     // ✅ Process and post the comment
     try {
-        const resultData = response.data;
         console.log("GET results content:", response.data);
         const dashboardUrl = `https://eval-norma--norma-dev.europe-west4.hosted.app/dashboard/projects/${project_id}/batch/${batch_id}/multiAgent`;
         const commentMarker = '<!-- norma-eval-get-comment -->';
@@ -36152,7 +36165,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
   `;
         const { owner, repo } = context.repo;
         let prNumber;
-        if ((_e = context.payload.pull_request) === null || _e === void 0 ? void 0 : _e.number) {
+        if ((_f = context.payload.pull_request) === null || _f === void 0 ? void 0 : _f.number) {
             prNumber = context.payload.pull_request.number;
         }
         else {
