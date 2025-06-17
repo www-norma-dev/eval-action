@@ -36097,7 +36097,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     (0, core_1.startGroup)('⏳ Waiting for batch to complete...');
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
-    const delayMs = 60000;
+    const delayMs = 120000;
     const maxAttempts = 30;
     let attempt = 0;
     let response;

@@ -16,7 +16,7 @@ export async function getResultsComment(
   const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
-  const delayMs = 60_000;
+  const delayMs = 120_000;
   const maxAttempts = 30;
   let attempt = 0;
   let response;
