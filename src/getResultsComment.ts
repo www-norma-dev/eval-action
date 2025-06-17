@@ -1,8 +1,9 @@
-import { endGroup, startGroup, info, error, setFailed } from '@actions/core';
+import { endGroup, startGroup, info, setFailed } from '@actions/core';
 import type { GitHub } from '@actions/github/lib/utils';
 import { Context } from '@actions/github/lib/context';
 import axios from 'axios';
 import { convertJsonToMarkdownTable } from '.';
+
 export async function getResultsComment(
   github: InstanceType<typeof GitHub>,
   context: Context,
@@ -10,92 +11,92 @@ export async function getResultsComment(
   project_id: string,
   batch_id: string
 ): Promise<void> {
-  startGroup('Fetching results and commenting on PR');
+  startGroup('⏳ Waiting for batch to complete...');
 
   const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
-  console.log("getResultComment.ts -- params:", user_id, project_id, batch_id)
-  console.log("🕐 Waiting 1 minute before checking batch status...");
-  await new Promise(res => setTimeout(res, 60_000));
-
-  const maxAttempts = 10;
-  const delayMs = 60000; // 1 min
+  const delayMs = 60_000;
+  const maxAttempts = 30;
   let attempt = 0;
   let response;
-  let markdownResults = ''
+  let status = '';
+  let markdownResults = '';
 
-  // 🔁 Polling loop
+  // 🕐 Petite pause initiale avant le premier appel
+  await new Promise(res => setTimeout(res, delayMs));
+
+  // 🔁 Tant que le batch n'est pas terminé
   while (attempt < maxAttempts) {
     try {
       response = await axios.get(url, {
         headers: { 'Content-Type': 'application/json' }
       });
 
-      const status = response.data?.status;
-      console.log(`⏳ Attempt ${attempt + 1} | Batch status: ${status}`);
+      status = response.data?.results?.status || '';
+      console.log(`🔍 Attempt ${attempt + 1}: batch status = "${status}"`);
 
       if (status === 'complete') {
-        const scenarios = response.data?.results?.scenarios;
-        if (scenarios && scenarios.length > 0) {
-          console.log('📦 Raw scenarios:', JSON.stringify(scenarios, null, 2));
-          markdownResults = convertJsonToMarkdownTable(
-            scenarios,
-            response.data.results.globalJustification
-          );
-          console.log('✅ Results ready and formatted.');
-          break;
-        } else {
-          console.log('⚠️ Status is "complete" but no scenarios found yet.');
-        }
-      } else if (status === 'failed') {
-        setFailed('❌ Batch processing failed.');
-        return;
-      } else {
-        console.log(`⏳ Status is "${status}". Waiting...`);
+        console.log('✅ Batch complete. Processing results...');
+        break;
       }
     } catch (err: any) {
-      if (err.response?.status === 404 || err.response?.status === 405) {
-        console.log(`⏳ Results not ready yet (attempt ${attempt + 1})...`);
-      } else {
-        setFailed(`❌ Unexpected error: ${err.message}`);
-        return;
-      }
+      console.log(`⏳ Attempt ${attempt + 1}: batch not ready (${err.response?.status || err.message})`);
     }
 
     attempt++;
     await new Promise(res => setTimeout(res, delayMs));
   }
 
-  if (!response || response.status !== 200 || !markdownResults) {
-    setFailed(`❌ Failed to fetch valid results after ${maxAttempts} attempts.`);
+  if (status !== 'complete') {
+    setFailed(`❌ Batch did not complete after ${maxAttempts} attempts.`);
     return;
   }
 
-  // ✅ Process and post the comment
+  // ✅ Traitement des résultats
   try {
-    console.log("GET results content:", response.data )
-    const dashboardUrl = `https://eval-norma--norma-dev.europe-west4.hosted.app/dashboard/projects/${project_id}/batch/${batch_id}/multiAgent`;
+    if (!response || !response.data?.results?.scenarios) {
+      setFailed('❌ No scenarios found in the results.');
+      return;
+    }
+    const scenarios = response.data?.results?.scenarios;
+    if (!scenarios || scenarios.length === 0) {
+      setFailed('❌ No scenarios found in the results.');
+      return;
+    }
 
+    markdownResults = convertJsonToMarkdownTable(
+      scenarios,
+      response.data.results.globalJustification
+    );
+  } catch (err: any) {
+    setFailed(`❌ Error processing results: ${err.message}`);
+    return;
+  }
+
+  // 📝 Poster le commentaire sur la PR
+  try {
+    const dashboardUrl = `https://eval-norma--norma-dev.europe-west4.hosted.app/dashboard/projects/${project_id}/batch/${batch_id}/multiAgent`;
     const commentMarker = '<!-- norma-eval-get-comment -->';
     const commentBody = `${commentMarker}
-  ### ✅ Fetched evaluation results
-  - **User ID:** \`${user_id}\`
-  - **Project ID:** \`${project_id}\`
-  - **Batch ID:** \`${batch_id}\`
-  **Check results in the dashboard**:[url](${dashboardUrl})
-  **Results table:**\n\n${markdownResults}
-  
-  
-  <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
-  `;
-  
-    const { owner, repo } = context.repo;
+### ✅ Fetched evaluation results
+- **User ID:** \`${user_id}\`
+- **Project ID:** \`${project_id}\`
+- **Batch ID:** \`${batch_id}\`
 
-    let prNumber: number | undefined;
-    if (context.payload.pull_request?.number) {
-      prNumber = context.payload.pull_request.number;
-    } else {
+🔗 [View results in dashboard](${dashboardUrl})
+
+**Results Table:**
+
+${markdownResults}
+
+<sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
+`;
+
+    const { owner, repo } = context.repo;
+    let prNumber = context.payload.pull_request?.number;
+
+    if (!prNumber) {
       const branchName = context.ref.replace('refs/heads/', '');
       const { data: pullRequests } = await github.rest.pulls.list({
         owner,
@@ -103,17 +104,11 @@ export async function getResultsComment(
         head: `${owner}:${branchName}`,
         state: 'open'
       });
-
-      if (pullRequests.length === 0) {
-        console.log('⚠️ No open PR found for this branch. Skipping comment.');
-        return;
-      }
-
-      prNumber = pullRequests[0].number;
+      prNumber = pullRequests[0]?.number;
     }
 
     if (!prNumber) {
-      console.log('⚠️ No PR number determined. Exiting.');
+      console.log('⚠️ No PR found. Exiting.');
       return;
     }
 
@@ -144,7 +139,6 @@ export async function getResultsComment(
       });
       info(`✅ Created new comment on PR #${prNumber}`);
     }
-
   } catch (err: any) {
     setFailed(`❌ Error posting comment: ${err.message}`);
   } finally {

@@ -36093,84 +36093,79 @@ const core_1 = __nccwpck_require__(7484);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
 const _1 = __nccwpck_require__(9407);
 async function getResultsComment(github, context, user_id, project_id, batch_id) {
-    var _a, _b, _c, _d, _e, _f;
-    (0, core_1.startGroup)('Fetching results and commenting on PR');
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    (0, core_1.startGroup)('⏳ Waiting for batch to complete...');
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
-    console.log("getResultComment.ts -- params:", user_id, project_id, batch_id);
-    console.log("🕐 Waiting 1 minute before checking batch status...");
-    await new Promise(res => setTimeout(res, 60000));
-    const maxAttempts = 10;
-    const delayMs = 60000; // 1 min
+    const delayMs = 60000;
+    const maxAttempts = 30;
     let attempt = 0;
     let response;
+    let status = '';
     let markdownResults = '';
-    // 🔁 Polling loop
+    // 🕐 Petite pause initiale avant le premier appel
+    await new Promise(res => setTimeout(res, delayMs));
+    // 🔁 Tant que le batch n'est pas terminé
     while (attempt < maxAttempts) {
         try {
             response = await axios_1.default.get(url, {
                 headers: { 'Content-Type': 'application/json' }
             });
-            const status = (_a = response.data) === null || _a === void 0 ? void 0 : _a.status;
-            console.log(`⏳ Attempt ${attempt + 1} | Batch status: ${status}`);
+            status = ((_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.results) === null || _b === void 0 ? void 0 : _b.status) || '';
+            console.log(`🔍 Attempt ${attempt + 1}: batch status = "${status}"`);
             if (status === 'complete') {
-                const scenarios = (_c = (_b = response.data) === null || _b === void 0 ? void 0 : _b.results) === null || _c === void 0 ? void 0 : _c.scenarios;
-                if (scenarios && scenarios.length > 0) {
-                    console.log('📦 Raw scenarios:', JSON.stringify(scenarios, null, 2));
-                    markdownResults = (0, _1.convertJsonToMarkdownTable)(scenarios, response.data.results.globalJustification);
-                    console.log('✅ Results ready and formatted.');
-                    break;
-                }
-                else {
-                    console.log('⚠️ Status is "complete" but no scenarios found yet.');
-                }
-            }
-            else if (status === 'failed') {
-                (0, core_1.setFailed)('❌ Batch processing failed.');
-                return;
-            }
-            else {
-                console.log(`⏳ Status is "${status}". Waiting...`);
+                console.log('✅ Batch complete. Processing results...');
+                break;
             }
         }
         catch (err) {
-            if (((_d = err.response) === null || _d === void 0 ? void 0 : _d.status) === 404 || ((_e = err.response) === null || _e === void 0 ? void 0 : _e.status) === 405) {
-                console.log(`⏳ Results not ready yet (attempt ${attempt + 1})...`);
-            }
-            else {
-                (0, core_1.setFailed)(`❌ Unexpected error: ${err.message}`);
-                return;
-            }
+            console.log(`⏳ Attempt ${attempt + 1}: batch not ready (${((_c = err.response) === null || _c === void 0 ? void 0 : _c.status) || err.message})`);
         }
         attempt++;
         await new Promise(res => setTimeout(res, delayMs));
     }
-    if (!response || response.status !== 200 || !markdownResults) {
-        (0, core_1.setFailed)(`❌ Failed to fetch valid results after ${maxAttempts} attempts.`);
+    if (status !== 'complete') {
+        (0, core_1.setFailed)(`❌ Batch did not complete after ${maxAttempts} attempts.`);
         return;
     }
-    // ✅ Process and post the comment
+    // ✅ Traitement des résultats
     try {
-        console.log("GET results content:", response.data);
+        if (!response || !((_e = (_d = response.data) === null || _d === void 0 ? void 0 : _d.results) === null || _e === void 0 ? void 0 : _e.scenarios)) {
+            (0, core_1.setFailed)('❌ No scenarios found in the results.');
+            return;
+        }
+        const scenarios = (_g = (_f = response.data) === null || _f === void 0 ? void 0 : _f.results) === null || _g === void 0 ? void 0 : _g.scenarios;
+        if (!scenarios || scenarios.length === 0) {
+            (0, core_1.setFailed)('❌ No scenarios found in the results.');
+            return;
+        }
+        markdownResults = (0, _1.convertJsonToMarkdownTable)(scenarios, response.data.results.globalJustification);
+    }
+    catch (err) {
+        (0, core_1.setFailed)(`❌ Error processing results: ${err.message}`);
+        return;
+    }
+    // 📝 Poster le commentaire sur la PR
+    try {
         const dashboardUrl = `https://eval-norma--norma-dev.europe-west4.hosted.app/dashboard/projects/${project_id}/batch/${batch_id}/multiAgent`;
         const commentMarker = '<!-- norma-eval-get-comment -->';
         const commentBody = `${commentMarker}
-  ### ✅ Fetched evaluation results
-  - **User ID:** \`${user_id}\`
-  - **Project ID:** \`${project_id}\`
-  - **Batch ID:** \`${batch_id}\`
-  **Check results in the dashboard**:[url](${dashboardUrl})
-  **Results table:**\n\n${markdownResults}
-  
-  
-  <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
-  `;
+### ✅ Fetched evaluation results
+- **User ID:** \`${user_id}\`
+- **Project ID:** \`${project_id}\`
+- **Batch ID:** \`${batch_id}\`
+
+🔗 [View results in dashboard](${dashboardUrl})
+
+**Results Table:**
+
+${markdownResults}
+
+<sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
+`;
         const { owner, repo } = context.repo;
-        let prNumber;
-        if ((_f = context.payload.pull_request) === null || _f === void 0 ? void 0 : _f.number) {
-            prNumber = context.payload.pull_request.number;
-        }
-        else {
+        let prNumber = (_h = context.payload.pull_request) === null || _h === void 0 ? void 0 : _h.number;
+        if (!prNumber) {
             const branchName = context.ref.replace('refs/heads/', '');
             const { data: pullRequests } = await github.rest.pulls.list({
                 owner,
@@ -36178,14 +36173,10 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
                 head: `${owner}:${branchName}`,
                 state: 'open'
             });
-            if (pullRequests.length === 0) {
-                console.log('⚠️ No open PR found for this branch. Skipping comment.');
-                return;
-            }
-            prNumber = pullRequests[0].number;
+            prNumber = (_j = pullRequests[0]) === null || _j === void 0 ? void 0 : _j.number;
         }
         if (!prNumber) {
-            console.log('⚠️ No PR number determined. Exiting.');
+            console.log('⚠️ No PR found. Exiting.');
             return;
         }
         const { data: existingComments } = await github.rest.issues.listComments({
