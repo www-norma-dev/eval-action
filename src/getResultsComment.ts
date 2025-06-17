@@ -1,4 +1,4 @@
-import { endGroup, startGroup, info, error, setFailed, markdownSummary } from '@actions/core';
+import { endGroup, startGroup, info, error, setFailed } from '@actions/core';
 import type { GitHub } from '@actions/github/lib/utils';
 import { Context } from '@actions/github/lib/context';
 import axios from 'axios';
@@ -18,7 +18,7 @@ export async function getResultsComment(
   console.log("getResultComment.ts -- params:", user_id, project_id, batch_id)
 
   const maxAttempts = 10;
-  const delayMs = 100000; // 10 mins
+  const delayMs = 60000; // 1 min
   let attempt = 0;
   let response;
   let markdownResults = ''
