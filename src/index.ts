@@ -20,13 +20,11 @@ async function run(): Promise<void> {
     const octokit = github.getOctokit(token);
     const { owner, repo } = github.context.repo;
 
-    // Determine branch name (from pull_request payload if available)
     const branchName = github.context.payload.pull_request
       ? github.context.payload.pull_request.head.ref
       : github.context.ref.replace("refs/heads/", "");
     console.log(`📌 Current branch: ${branchName}`);
 
-    // Fetch open PRs with this branch as head
     const { data: pullRequests } = await octokit.rest.pulls.list({
       owner,
       repo,
@@ -38,7 +36,7 @@ async function run(): Promise<void> {
       console.log("⚠️ No open PR found for this branch. Skipping comment.");
     }
 
-    // Retrieve inputs from action.yml
+    // Inputs
     const vla_endpoint: string = core.getInput("vla_endpoint");
     const vla_credentials: string = core.getInput("vla_credentials");
     const test_name: string = core.getInput("test_name");
@@ -52,98 +50,84 @@ async function run(): Promise<void> {
     console.log(`🔄 Sending API request to: ${vla_endpoint}`);
     const type = 'multiAgent';
 
-    // Call the function to post or update the PR comment
-    await postChannelComment(
-      octokit,
-      github.context,
-      vla_endpoint,
-      test_name,
-      type
-    );
-    
+    await postChannelComment(octokit, github.context, vla_endpoint, test_name, type);
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, 10 * 60 * 1000); // Set timeout for 10 minutes
-
-    const spinner = ora('Waiting for API response...').start();
-
-    // Start a heartbeat that logs every minute
     const agent = new https.Agent({ keepAlive: true });
+    const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
+    
     const heartbeatInterval = setInterval(() => {
       console.log("⏱️ Still waiting for API response...");
     }, 60000); // Log every 60 seconds
+    const postData = {
+      name: test_name,
+      vla_endpoint,
+      vla_credentials,
+      model_id,
+      model_name,
+      test_name,
+      scenario_id,
+      test_level: "standard",
+      state: {
+        testName: test_name,
+        apiHost: vla_endpoint,
+        withAi: false
+      },
+      user_id,
+      project_id,
+      attempts
+    };
+    
+    console.log(url);
+    console.log('--------- postData --------');
+    console.log(postData);
+    const spinner = ora('Waiting for batch status to be "complete"...').start();
+    let status = 'queued';
+    let apiResponse: any = null;
+    let batch_id: string | null = null;
+    const maxAttempts = 20;
+    const interval = 60_000; // 1 min
+    let attempt = 0;
     let response;
-    try {
-      const postData = {
-        name: test_name,
-        vla_endpoint,
-        vla_credentials,
-        model_id,
-        model_name,
-        test_name,
-        scenario_id,
-        test_level : "standard",
-        state: {
-          testName: test_name,
-          apiHost: vla_endpoint,
-          withAi: false
-        },
-        user_id: user_id,
-        project_id: project_id,
-        attempts
-      };
-      console.log('----------- THIS IS THE URL -----------');
-      const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
-      console.log(url);
-      console.log('--------- postData --------');
-      console.log(postData);
 
-      // Make the API POST request
-      response = await axios.post(url,
-        postData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          httpsAgent: agent,
-          timeout: 20 * 60 * 1000, // 10 minutes timeout
-          signal: controller.signal,
+    while (attempt < maxAttempts) {
+      try {
+        const response = await axios.post(url, postData, {
+          headers: { "Content-Type": "application/json" },
+          httpsAgent: agent
+        });
+
+        apiResponse = response.data;
+        status = apiResponse.status;
+
+        console.log(`⏱️ Attempt ${attempt + 1}: batch status = ${status}`);
+        console.log("------- DATA:", apiResponse);
+        console.log("----- Current status:", status);
+
+        if (status === 'complete') {
+          spinner.succeed('✅ Batch completed.');
+          batch_id = apiResponse.batchTestId;
+          break;
         }
-      );
-      clearTimeout(timeout);
-      clearInterval(heartbeatInterval);
 
-      console.log('---------- RESPONSE ---------');
-      console.log(response.data);
-      if (response.status < 200 || response.status >= 300) {
-        core.setFailed(`❌ API request failed with status ${response.status}: ${response.statusText}`);
-        spinner.fail(`API request failed with status ${response.status}`);
-        return;
+      } catch (err: any) {
+        console.warn(`⚠️ Error while checking status: ${err.message}`);
       }
 
-      spinner.succeed('API response received.');
+      attempt++;
+      await new Promise((r) => setTimeout(r, interval));
+    }
 
-    } catch (error: any) {
-      clearTimeout(timeout);
-      clearInterval(heartbeatInterval);
-      spinner.fail(`Action failed: ${error.message}`);
-      core.setFailed(`❌ API request failed: ${error.message}`);
+    clearInterval(heartbeatInterval);
+
+    if (status !== 'complete' || !batch_id) {
+      spinner.fail('❌ Batch did not complete in time or no batch ID found.');
+      core.setFailed('Batch status never reached "complete".');
       return;
     }
 
-    const apiResponse: any = response.data;
-    startGroup('API Response');
-    const batchId = apiResponse.batchTestId // get batchId build during the pub/sub call
     console.log("✅ API Response Received:", apiResponse);
-    console.log("batchID from ingest event:", batchId);
-    endGroup();
-
-    // Use the current commit SHA as the commit identifier
     const commit = process.env.GITHUB_SHA || 'N/A';
 
-    // Call the function to post or update the PR comment
     await postChannelSuccessComment(
       octokit,
       github.context,
@@ -154,14 +138,14 @@ async function run(): Promise<void> {
       apiResponse.report_url
     );
 
-    const batch_id = apiResponse.batchTestId;
+    console.log("batchID from ingest event:", batch_id);
 
     await getResultsComment(
       octokit,
       github.context,
       user_id,
       project_id,
-      batch_id,
+      batch_id
     );
 
   } catch (error: any) {

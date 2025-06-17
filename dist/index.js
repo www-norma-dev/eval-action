@@ -11163,81 +11163,6 @@ function populateMaps (extensions, types) {
 
 /***/ }),
 
-/***/ 4470:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { EventEmitter } = __nccwpck_require__(4434);
-
-class AbortSignal {
-  constructor() {
-    this.eventEmitter = new EventEmitter();
-    this.onabort = null;
-    this.aborted = false;
-    this.reason = undefined;
-  }
-  toString() {
-    return "[object AbortSignal]";
-  }
-  get [Symbol.toStringTag]() {
-    return "AbortSignal";
-  }
-  removeEventListener(name, handler) {
-    this.eventEmitter.removeListener(name, handler);
-  }
-  addEventListener(name, handler) {
-    this.eventEmitter.on(name, handler);
-  }
-  dispatchEvent(type) {
-    const event = { type, target: this };
-    const handlerName = `on${type}`;
-
-    if (typeof this[handlerName] === "function") this[handlerName](event);
-
-    this.eventEmitter.emit(type, event);
-  }
-  throwIfAborted() {
-    if (this.aborted) {
-      throw this.reason;
-    }
-  }
-  static abort(reason) {
-    const controller = new AbortController();
-    controller.abort();
-    return controller.signal;
-  }
-  static timeout(time) {
-    const controller = new AbortController();
-    setTimeout(() => controller.abort(new Error("TimeoutError")), time);
-    return controller.signal;
-  }
-}
-class AbortController {
-  constructor() {
-    this.signal = new AbortSignal();
-  }
-  abort(reason) {
-    if (this.signal.aborted) return;
-
-    this.signal.aborted = true;
-
-    if (reason) this.signal.reason = reason;
-    else this.signal.reason = new Error("AbortError");
-
-    this.signal.dispatchEvent("abort");
-  }
-  toString() {
-    return "[object AbortController]";
-  }
-  get [Symbol.toStringTag]() {
-    return "AbortController";
-  }
-}
-
-module.exports = { AbortController, AbortSignal };
-
-
-/***/ }),
-
 /***/ 5560:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -36098,8 +36023,6 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
     console.log("getResultComment.ts -- params:", user_id, project_id, batch_id);
-    console.log('⏳ Waiting 5 minutes to let batch run finish and fetch results...');
-    await new Promise(res => setTimeout(res, 300000)); // 5 minutes
     const maxAttempts = 10;
     const delayMs = 100000; // 10 mins
     let attempt = 0;
@@ -36249,10 +36172,8 @@ const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const postChannelSuccessComment_1 = __nccwpck_require__(3278);
 const getResultsComment_1 = __nccwpck_require__(400);
-const core_1 = __nccwpck_require__(7484);
 const ora_1 = __importDefault(__nccwpck_require__(1223));
 const https_1 = __importDefault(__nccwpck_require__(5692));
-const node_abort_controller_1 = __nccwpck_require__(4470);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
 async function run() {
     try {
@@ -36263,12 +36184,10 @@ async function run() {
         }
         const octokit = github.getOctokit(token);
         const { owner, repo } = github.context.repo;
-        // Determine branch name (from pull_request payload if available)
         const branchName = github.context.payload.pull_request
             ? github.context.payload.pull_request.head.ref
             : github.context.ref.replace("refs/heads/", "");
         console.log(`📌 Current branch: ${branchName}`);
-        // Fetch open PRs with this branch as head
         const { data: pullRequests } = await octokit.rest.pulls.list({
             owner,
             repo,
@@ -36278,7 +36197,7 @@ async function run() {
         if (pullRequests.length === 0) {
             console.log("⚠️ No open PR found for this branch. Skipping comment.");
         }
-        // Retrieve inputs from action.yml
+        // Inputs
         const vla_endpoint = core.getInput("vla_endpoint");
         const vla_credentials = core.getInput("vla_credentials");
         const test_name = core.getInput("test_name");
@@ -36290,81 +36209,74 @@ async function run() {
         const attempts = core.getInput("attempts");
         console.log(`🔄 Sending API request to: ${vla_endpoint}`);
         const type = 'multiAgent';
-        // Call the function to post or update the PR comment
         await (0, postChannelSuccessComment_1.postChannelComment)(octokit, github.context, vla_endpoint, test_name, type);
-        const controller = new node_abort_controller_1.AbortController();
-        const timeout = setTimeout(() => {
-            controller.abort();
-        }, 10 * 60 * 1000); // Set timeout for 10 minutes
-        const spinner = (0, ora_1.default)('Waiting for API response...').start();
-        // Start a heartbeat that logs every minute
         const agent = new https_1.default.Agent({ keepAlive: true });
+        const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
         const heartbeatInterval = setInterval(() => {
             console.log("⏱️ Still waiting for API response...");
         }, 60000); // Log every 60 seconds
+        const postData = {
+            name: test_name,
+            vla_endpoint,
+            vla_credentials,
+            model_id,
+            model_name,
+            test_name,
+            scenario_id,
+            test_level: "standard",
+            state: {
+                testName: test_name,
+                apiHost: vla_endpoint,
+                withAi: false
+            },
+            user_id,
+            project_id,
+            attempts
+        };
+        console.log(url);
+        console.log('--------- postData --------');
+        console.log(postData);
+        const spinner = (0, ora_1.default)('Waiting for batch status to be "complete"...').start();
+        let status = 'queued';
+        let apiResponse = null;
+        let batch_id = null;
+        const maxAttempts = 20;
+        const interval = 60000; // 1 min
+        let attempt = 0;
         let response;
-        try {
-            const postData = {
-                name: test_name,
-                vla_endpoint,
-                vla_credentials,
-                model_id,
-                model_name,
-                test_name,
-                scenario_id,
-                test_level: "standard",
-                state: {
-                    testName: test_name,
-                    apiHost: vla_endpoint,
-                    withAi: false
-                },
-                user_id: user_id,
-                project_id: project_id,
-                attempts
-            };
-            console.log('----------- THIS IS THE URL -----------');
-            const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
-            console.log(url);
-            console.log('--------- postData --------');
-            console.log(postData);
-            // Make the API POST request
-            response = await axios_1.default.post(url, postData, {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                httpsAgent: agent,
-                timeout: 20 * 60 * 1000,
-                signal: controller.signal,
-            });
-            clearTimeout(timeout);
-            clearInterval(heartbeatInterval);
-            console.log('---------- RESPONSE ---------');
-            console.log(response.data);
-            if (response.status < 200 || response.status >= 300) {
-                core.setFailed(`❌ API request failed with status ${response.status}: ${response.statusText}`);
-                spinner.fail(`API request failed with status ${response.status}`);
-                return;
+        while (attempt < maxAttempts) {
+            try {
+                const response = await axios_1.default.post(url, postData, {
+                    headers: { "Content-Type": "application/json" },
+                    httpsAgent: agent
+                });
+                apiResponse = response.data;
+                status = apiResponse.status;
+                console.log(`⏱️ Attempt ${attempt + 1}: batch status = ${status}`);
+                console.log("------- DATA:", apiResponse);
+                console.log("----- Current status:", status);
+                if (status === 'complete') {
+                    spinner.succeed('✅ Batch completed.');
+                    batch_id = apiResponse.batchTestId;
+                    break;
+                }
             }
-            spinner.succeed('API response received.');
+            catch (err) {
+                console.warn(`⚠️ Error while checking status: ${err.message}`);
+            }
+            attempt++;
+            await new Promise((r) => setTimeout(r, interval));
         }
-        catch (error) {
-            clearTimeout(timeout);
-            clearInterval(heartbeatInterval);
-            spinner.fail(`Action failed: ${error.message}`);
-            core.setFailed(`❌ API request failed: ${error.message}`);
+        clearInterval(heartbeatInterval);
+        if (status !== 'complete' || !batch_id) {
+            spinner.fail('❌ Batch did not complete in time or no batch ID found.');
+            core.setFailed('Batch status never reached "complete".');
             return;
         }
-        const apiResponse = response.data;
-        (0, core_1.startGroup)('API Response');
-        const batchId = apiResponse.batchTestId; // get batchId build during the pub/sub call
         console.log("✅ API Response Received:", apiResponse);
-        console.log("batchID from ingest event:", batchId);
-        (0, core_1.endGroup)();
-        // Use the current commit SHA as the commit identifier
         const commit = process.env.GITHUB_SHA || 'N/A';
-        // Call the function to post or update the PR comment
         await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, commit, vla_endpoint, type, test_name, apiResponse.report_url);
-        const batch_id = apiResponse.batchTestId;
+        console.log("batchID from ingest event:", batch_id);
         await (0, getResultsComment_1.getResultsComment)(octokit, github.context, user_id, project_id, batch_id);
     }
     catch (error) {

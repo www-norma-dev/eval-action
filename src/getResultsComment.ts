@@ -17,9 +17,6 @@ export async function getResultsComment(
 
   console.log("getResultComment.ts -- params:", user_id, project_id, batch_id)
 
-  console.log('⏳ Waiting 5 minutes to let batch run finish and fetch results...');
-  await new Promise(res => setTimeout(res, 300000)); // 5 minutes
-
   const maxAttempts = 10;
   const delayMs = 100000; // 10 mins
   let attempt = 0;
