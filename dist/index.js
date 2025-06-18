@@ -36292,8 +36292,8 @@ async function run() {
         const scenario_id = core.getInput("scenario_id");
         const user_id = core.getInput("user_id");
         const attempts = core.getInput("attempts");
+        const type = core.getInput("type");
         console.log(`🔄 Sending API request to: ${vla_endpoint}`);
-        const type = 'multiAgent';
         // Call the function to post or update the PR comment
         await (0, postChannelSuccessComment_1.postChannelComment)(octokit, github.context, vla_endpoint, test_name, type);
         const controller = new node_abort_controller_1.AbortController();

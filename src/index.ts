@@ -42,8 +42,9 @@ async function run(): Promise<void> {
     const scenario_id: string = core.getInput("scenario_id");
     const user_id: string = core.getInput("user_id");
     const attempts: string = core.getInput("attempts");
+    const type: string = core.getInput("type");
+    
     console.log(`🔄 Sending API request to: ${vla_endpoint}`);
-    const type = 'multiAgent';
     // Call the function to post or update the PR comment
     await postChannelComment(
       octokit,
