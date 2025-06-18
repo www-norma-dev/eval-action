@@ -36093,36 +36093,36 @@ const core_1 = __nccwpck_require__(7484);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
 const _1 = __nccwpck_require__(9407);
 async function getResultsComment(github, context, user_id, project_id, batch_id) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     (0, core_1.startGroup)('⏳ Waiting for batch to complete...');
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
-    const delayMs = 120000;
+    const delayMs = 120000; // 2 minutes
+    const wait = 180000; // Wait 3 minutes
     const maxAttempts = 30;
     let attempt = 0;
     let response;
     let status = '';
     let markdownResults = '';
-    // 🕐 Petite pause initiale avant le premier appel
     await new Promise(res => setTimeout(res, delayMs));
-    // 🔁 Tant que le batch n'est pas terminé
     while (attempt < maxAttempts) {
         try {
             response = await axios_1.default.get(url, {
                 headers: { 'Content-Type': 'application/json' }
             });
-            status = ((_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.results) === null || _b === void 0 ? void 0 : _b.status) || '';
+            status = ((_a = response.data) === null || _a === void 0 ? void 0 : _a.status) || '';
+            console.log('------ Status------:', status);
             console.log(`🔍 Attempt ${attempt + 1}: batch status = "${status}"`);
-            if (status === 'complete') {
+            if (status === 'complete' || status === 'COMPLETE') {
                 console.log('✅ Batch complete. Processing results...');
                 break;
             }
         }
         catch (err) {
-            console.log(`⏳ Attempt ${attempt + 1}: batch not ready (${((_c = err.response) === null || _c === void 0 ? void 0 : _c.status) || err.message})`);
+            console.log(`⏳ Attempt ${attempt + 1}: batch not ready (${((_b = err.response) === null || _b === void 0 ? void 0 : _b.status) || err.message})`);
         }
         attempt++;
-        await new Promise(res => setTimeout(res, delayMs));
+        await new Promise(res => setTimeout(res, delayMs)); // Retry if batch is not finished
     }
     if (status !== 'complete') {
         (0, core_1.setFailed)(`❌ Batch did not complete after ${maxAttempts} attempts.`);
@@ -36130,11 +36130,11 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     }
     // ✅ Traitement des résultats
     try {
-        if (!response || !((_e = (_d = response.data) === null || _d === void 0 ? void 0 : _d.results) === null || _e === void 0 ? void 0 : _e.scenarios)) {
+        if (!response || !((_d = (_c = response.data) === null || _c === void 0 ? void 0 : _c.results) === null || _d === void 0 ? void 0 : _d.scenarios)) {
             (0, core_1.setFailed)('❌ No scenarios found in the results.');
             return;
         }
-        const scenarios = (_g = (_f = response.data) === null || _f === void 0 ? void 0 : _f.results) === null || _g === void 0 ? void 0 : _g.scenarios;
+        const scenarios = (_f = (_e = response.data) === null || _e === void 0 ? void 0 : _e.results) === null || _f === void 0 ? void 0 : _f.scenarios;
         if (!scenarios || scenarios.length === 0) {
             (0, core_1.setFailed)('❌ No scenarios found in the results.');
             return;
@@ -36164,7 +36164,7 @@ ${markdownResults}
 <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
 `;
         const { owner, repo } = context.repo;
-        let prNumber = (_h = context.payload.pull_request) === null || _h === void 0 ? void 0 : _h.number;
+        let prNumber = (_g = context.payload.pull_request) === null || _g === void 0 ? void 0 : _g.number;
         if (!prNumber) {
             const branchName = context.ref.replace('refs/heads/', '');
             const { data: pullRequests } = await github.rest.pulls.list({
@@ -36173,7 +36173,7 @@ ${markdownResults}
                 head: `${owner}:${branchName}`,
                 state: 'open'
             });
-            prNumber = (_j = pullRequests[0]) === null || _j === void 0 ? void 0 : _j.number;
+            prNumber = (_h = pullRequests[0]) === null || _h === void 0 ? void 0 : _h.number;
         }
         if (!prNumber) {
             console.log('⚠️ No PR found. Exiting.');

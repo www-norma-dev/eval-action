@@ -3,6 +3,7 @@ import type { GitHub } from '@actions/github/lib/utils';
 import { Context } from '@actions/github/lib/context';
 import axios from 'axios';
 import { convertJsonToMarkdownTable } from '.';
+import { stat } from 'fs';
 
 export async function getResultsComment(
   github: InstanceType<typeof GitHub>,
@@ -16,27 +17,27 @@ export async function getResultsComment(
   const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
-  const delayMs = 120_000;
+  const delayMs = 120_000; // 2 minutes
+  const wait = 180_000; // Wait 3 minutes
   const maxAttempts = 30;
   let attempt = 0;
   let response;
   let status = '';
   let markdownResults = '';
 
-  // 🕐 Petite pause initiale avant le premier appel
   await new Promise(res => setTimeout(res, delayMs));
 
-  // 🔁 Tant que le batch n'est pas terminé
   while (attempt < maxAttempts) {
     try {
       response = await axios.get(url, {
         headers: { 'Content-Type': 'application/json' }
       });
 
-      status = response.data?.results?.status || '';
+      status = response.data?.status || '';
+      console.log('------ Status------:', status)
       console.log(`🔍 Attempt ${attempt + 1}: batch status = "${status}"`);
 
-      if (status === 'complete') {
+      if (status === 'complete' || status === 'COMPLETE') {
         console.log('✅ Batch complete. Processing results...');
         break;
       }
@@ -45,7 +46,7 @@ export async function getResultsComment(
     }
 
     attempt++;
-    await new Promise(res => setTimeout(res, delayMs));
+    await new Promise(res => setTimeout(res, delayMs)); // Retry if batch is not finished
   }
 
   if (status !== 'complete') {
