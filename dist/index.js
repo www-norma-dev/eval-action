@@ -36059,8 +36059,6 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
 
 🔗 [View results in dashboard](${dashboardUrl})
 
-**Results Table:**
-
 ${markdownResults}
 
 <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
@@ -36319,7 +36317,7 @@ function convertJsonToMarkdownTable(scenarios, results) {
         '| ' + headers.map(() => '---').join(' | ') + ' |',
         ...rows.map(row => '| ' + row.map(cell => cell.toString().replace(/\n/g, ' ')).join(' | ') + ' |')
     ].join('\n');
-    return `### Conversation Logs\n${markdown}`;
+    return `### Result table\n${markdown}`;
 }
 exports.convertJsonToMarkdownTable = convertJsonToMarkdownTable;
 function formatTableForConsole(jsonData) {

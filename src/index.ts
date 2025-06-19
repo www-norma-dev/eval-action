@@ -211,7 +211,7 @@ export function convertJsonToMarkdownTable(
     ...rows.map(row => '| ' + row.map(cell => cell.toString().replace(/\n/g, ' ')).join(' | ') + ' |')
   ].join('\n');
 
-  return `### Conversation Logs\n${markdown}`;
+  return `### Result table\n${markdown}`;
 }
 
 

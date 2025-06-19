@@ -99,8 +99,6 @@ export async function getResultsComment(
 
 🔗 [View results in dashboard](${dashboardUrl})
 
-**Results Table:**
-
 ${markdownResults}
 
 <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
