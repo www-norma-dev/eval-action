@@ -36251,13 +36251,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.convertJsonToMarkdownTable = void 0;
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
-const postChannelSuccessComment_1 = __nccwpck_require__(3278);
 const getResultsComment_1 = __nccwpck_require__(400);
-const core_1 = __nccwpck_require__(7484);
 const ora_1 = __importDefault(__nccwpck_require__(1223));
 const https_1 = __importDefault(__nccwpck_require__(5692));
 const node_abort_controller_1 = __nccwpck_require__(4470);
-const axios_1 = __importDefault(__nccwpck_require__(7269));
 // Add a general comment to describe index.ts file
 async function run() {
     try {
@@ -36317,30 +36314,41 @@ async function run() {
                 scenario_id,
                 user_id,
                 project_id,
-                attempts
+                attempts,
+                type
             };
             console.log('--------- postData payload --------');
             console.log(postData);
             const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
             // Make the API POST request
-            response = await axios_1.default.post(url, postData, {
+            /**
+            response = await axios.post(url,
+              postData,
+              {
                 headers: {
-                    "Content-Type": "application/json",
+                  "Content-Type": "application/json",
                 },
                 httpsAgent: agent,
-                timeout: 20 * 60 * 1000,
+                timeout: 20 * 60 * 1000, // 10 minutes timeout
                 signal: controller.signal,
-            });
+              }
+            );
+      
             clearTimeout(timeout);
             clearInterval(heartbeatInterval);
+      
             console.log('---------- RESPONSE ---------');
             console.log(response.data);
+      
             if (response.status < 200 || response.status >= 300) {
-                core.setFailed(`❌ API request failed with status ${response.status}: ${response.statusText}`);
-                spinner.fail(`API request failed with status ${response.status}`);
-                return;
+              core.setFailed(`❌ API request failed with status ${response.status}: ${response.statusText}`);
+              spinner.fail(`API request failed with status ${response.status}`);
+              return;
             }
+      
             spinner.succeed('API response received.');
+      
+            */
         }
         catch (error) {
             clearTimeout(timeout);
@@ -36349,15 +36357,29 @@ async function run() {
             core.setFailed(`❌ API request failed: ${error.message}`);
             return;
         }
-        const apiResponse = response.data;
-        (0, core_1.startGroup)('API Response');
-        console.log("✅ API Response Received:", apiResponse);
-        (0, core_1.endGroup)();
+        /** const apiResponse: any = response.data;
+         
+         startGroup('API Response');
+         console.log("✅ API Response Received:", apiResponse);
+         endGroup();
+         */
         // Use the current commit SHA as the commit identifier
         const commit = process.env.GITHUB_SHA || 'N/A';
         // Call the function to post or update the PR comment
-        await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, commit, vla_endpoint, type, test_name);
+        /**
+        await postChannelSuccessComment(
+          octokit,
+          github.context,
+          commit,
+          vla_endpoint,
+          type,
+          test_name,
+        );
+        
         const batch_id = apiResponse.batchTestId; // Retrieve the batchId built during the pub/sub run
+        console.log("batchID from ingest event:", batch_id);
+        */
+        const batch_id = "batch-69a3766e-942a-47e9-856d-80d1de4e550f"; // without dashboard url
         console.log("batchID from ingest event:", batch_id);
         await (0, getResultsComment_1.getResultsComment)(octokit, github.context, user_id, project_id, batch_id);
     }
@@ -36420,200 +36442,6 @@ function formatTableForConsole(jsonData) {
     return table;
 }
 run();
-
-
-/***/ }),
-
-/***/ 3278:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.postChannelComment = exports.postChannelSuccessComment = void 0;
-const core_1 = __nccwpck_require__(7484);
-/**
- * Posts or updates a comment on a pull request with the evaluation report.
- * Make sure your workflow YAML grants the GITHUB_TOKEN proper permissions:
- *
- * permissions:
- *   contents: read
- *   pull-requests: write
- *   issues: write
- *
- * @param github - An instance of Octokit authenticated with GITHUB_TOKEN.
- * @param context - The GitHub Actions context.
- * @param result - The evaluation result string.
- * @param commit - The commit SHA or identifier.
- */
-async function postChannelSuccessComment(github, context, commit, api_host, type, test_name) {
-    (0, core_1.startGroup)('Commenting on PR');
-    try {
-        const commentMarker = '<!-- norma-eval-post-comment -->';
-        const commentBody = `${commentMarker}
-### 🚀 Automatic Evaluation Report
-- **API Host:** \`${api_host}\`
-- **Type:** \`${type}\`
-- **Test Name:** \`${test_name}\`
-
-<sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
-`;
-        const { owner, repo } = context.repo;
-        let prNumber;
-        // Use the PR number from the payload if available
-        if (context.payload.pull_request && context.payload.pull_request.number) {
-            prNumber = context.payload.pull_request.number;
-            console.log(`Pull request found in payload: #${prNumber}`);
-        }
-        else {
-            // For push events, derive branch name from context.ref
-            const branchName = context.ref.replace('refs/heads/', '');
-            // Find open PRs with the current branch as head
-            const { data: pullRequests } = await github.rest.pulls.list({
-                owner,
-                repo,
-                head: `${owner}:${branchName}`,
-                state: 'open'
-            });
-            if (pullRequests.length === 0) {
-                console.log('⚠️ No open PR found for this branch. Skipping comment.');
-                return;
-            }
-            prNumber = pullRequests[0].number;
-            console.log(`Found open PR #${prNumber} for branch ${branchName}`);
-        }
-        if (!prNumber) {
-            console.log('⚠️ No PR number determined. Exiting.');
-            return;
-        }
-        // Retrieve existing comments on the PR
-        const { data: existingComments } = await github.rest.issues.listComments({
-            owner,
-            repo,
-            issue_number: prNumber
-        });
-        // Look for an existing comment with the marker
-        const existingComment = existingComments.find((c) => c.body && c.body.includes(commentMarker));
-        if (existingComment) {
-            // Update the existing comment
-            await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existingComment.id,
-                body: commentBody
-            });
-            (0, core_1.info)(`✅ Updated existing comment in PR #${prNumber}`);
-        }
-        else {
-            // Create a new comment if no matching comment was found
-            await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: prNumber,
-                body: commentBody
-            });
-            (0, core_1.info)(`✅ Created new comment in PR #${prNumber}`);
-        }
-    }
-    catch (e) {
-        (0, core_1.error)(`Error posting/updating comment: ${e.message}`);
-    }
-    finally {
-        (0, core_1.endGroup)();
-    }
-}
-exports.postChannelSuccessComment = postChannelSuccessComment;
-/**
- * Posts or updates a comment on a pull request with the evaluation report.
- * Make sure your workflow YAML grants the GITHUB_TOKEN proper permissions:
- *
- * permissions:
- *   contents: read
- *   pull-requests: write
- *   issues: write
- *
- * @param github - An instance of Octokit authenticated with GITHUB_TOKEN.
- * @param context - The GitHub Actions context.
- * @param result - The evaluation result string.
- * @param commit - The commit SHA or identifier.
- */
-async function postChannelComment(github, context, vla_endpoint, type, test_name) {
-    (0, core_1.startGroup)('Commenting on PR');
-    try {
-        const commentMarker = '<!-- norma-eval-post-comment -->';
-        const commentBody = `${commentMarker}
-### 🚀 Automatic Evaluation Report
-- **API Host:** \`${vla_endpoint}\`
-- **Type:** \`${type}\`
-- **Test Name:** \`${test_name}\`
-
-<sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
-`;
-        const { owner, repo } = context.repo;
-        let prNumber;
-        // Use the PR number from the payload if available
-        if (context.payload.pull_request && context.payload.pull_request.number) {
-            prNumber = context.payload.pull_request.number;
-            console.log(`Pull request found in payload: #${prNumber}`);
-        }
-        else {
-            // For push events, derive branch name from context.ref
-            const branchName = context.ref.replace('refs/heads/', '');
-            // Find open PRs with the current branch as head
-            const { data: pullRequests } = await github.rest.pulls.list({
-                owner,
-                repo,
-                head: `${owner}:${branchName}`,
-                state: 'open'
-            });
-            if (pullRequests.length === 0) {
-                console.log('⚠️ No open PR found for this branch. Skipping comment.');
-                return;
-            }
-            prNumber = pullRequests[0].number;
-            console.log(`Found open PR #${prNumber} for branch ${branchName}`);
-        }
-        if (!prNumber) {
-            console.log('⚠️ No PR number determined. Exiting.');
-            return;
-        }
-        // Retrieve existing comments on the PR
-        const { data: existingComments } = await github.rest.issues.listComments({
-            owner,
-            repo,
-            issue_number: prNumber
-        });
-        // Look for an existing comment with the marker
-        const existingComment = existingComments.find((c) => c.body && c.body.includes(commentMarker));
-        if (existingComment) {
-            // Update the existing comment
-            await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existingComment.id,
-                body: commentBody
-            });
-            (0, core_1.info)(`✅ Updated existing comment in PR #${prNumber}`);
-        }
-        else {
-            // Create a new comment if no matching comment was found
-            await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: prNumber,
-                body: commentBody
-            });
-            (0, core_1.info)(`✅ Created new comment in PR #${prNumber}`);
-        }
-    }
-    catch (e) {
-        (0, core_1.error)(`Error posting/updating comment: ${e.message}`);
-    }
-    finally {
-        (0, core_1.endGroup)();
-    }
-}
-exports.postChannelComment = postChannelComment;
 
 
 /***/ }),

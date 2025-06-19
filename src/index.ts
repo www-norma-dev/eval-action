@@ -53,6 +53,7 @@ async function run(): Promise<void> {
 
     console.log(`🔄 Sending API request to: ${vla_endpoint}`);
 
+
     // Abort the request after 10 min
     const controller = new AbortController();
     const timeout = setTimeout(() => {
@@ -78,7 +79,8 @@ async function run(): Promise<void> {
         scenario_id,
         user_id,
         project_id,
-        attempts
+        attempts,
+        type
       };
 
       console.log('--------- postData payload --------');
@@ -87,6 +89,7 @@ async function run(): Promise<void> {
       const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
 
       // Make the API POST request
+      /** 
       response = await axios.post(url,
         postData,
         {
@@ -113,6 +116,7 @@ async function run(): Promise<void> {
 
       spinner.succeed('API response received.');
 
+      */
     } catch (error: any) {
       clearTimeout(timeout);
       clearInterval(heartbeatInterval);
@@ -120,17 +124,19 @@ async function run(): Promise<void> {
       core.setFailed(`❌ API request failed: ${error.message}`);
       return;
     }
-
-    const apiResponse: any = response.data;
-
+    
+   /** const apiResponse: any = response.data;
+    
     startGroup('API Response');
     console.log("✅ API Response Received:", apiResponse);
     endGroup();
+    */
 
     // Use the current commit SHA as the commit identifier
     const commit = process.env.GITHUB_SHA || 'N/A';
 
     // Call the function to post or update the PR comment
+    /** 
     await postChannelSuccessComment(
       octokit,
       github.context,
@@ -139,9 +145,12 @@ async function run(): Promise<void> {
       type,
       test_name,
     );
-
+    
     const batch_id = apiResponse.batchTestId; // Retrieve the batchId built during the pub/sub run
     console.log("batchID from ingest event:", batch_id);
+    */
+   const batch_id = "batch-69a3766e-942a-47e9-856d-80d1de4e550f" // without dashboard url
+   console.log("batchID from ingest event:", batch_id);
 
     await getResultsComment(
       octokit,
