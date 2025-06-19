@@ -36306,10 +36306,10 @@ function convertJsonToMarkdownTable(scenarios, results) {
         rows.push([
             scenarioName,
             `${(_a = globalAverageScore.openai) !== null && _a !== void 0 ? _a : 'N/A'}`,
-            `${(_b = scenarioAverageScore.openai) !== null && _b !== void 0 ? _b : 'N/A'}`,
-            `${(_c = globalAverageScore.ionos) !== null && _c !== void 0 ? _c : 'N/A'}`,
-            `${(_d = scenarioAverageScore.ionos) !== null && _d !== void 0 ? _d : 'N/A'}`,
-            `${(_e = globalAverageScore.metadata) !== null && _e !== void 0 ? _e : 'N/A'}`,
+            `${(_b = globalAverageScore.ionos) !== null && _b !== void 0 ? _b : 'N/A'}`,
+            `${(_c = globalAverageScore.metadata) !== null && _c !== void 0 ? _c : 'N/A'}`,
+            `${(_d = scenarioAverageScore.openai) !== null && _d !== void 0 ? _d : 'N/A'}`,
+            `${(_e = scenarioAverageScore.ionos) !== null && _e !== void 0 ? _e : 'N/A'}`,
             `${(_f = scenarioAverageScore.metadata) !== null && _f !== void 0 ? _f : 'N/A'}`,
         ]);
     });

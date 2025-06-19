@@ -55,7 +55,6 @@ export async function getResultsComment(
   }
 
   try {
-
     // Retrieve scenario 
     if (!response || !response.data?.results?.scenarios) {
       setFailed('No scenarios found in the results.');

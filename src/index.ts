@@ -196,10 +196,10 @@ export function convertJsonToMarkdownTable(
     rows.push([
       scenarioName,
       `${globalAverageScore.openai ?? 'N/A'}`,
-      `${scenarioAverageScore.openai ?? 'N/A'}`,
       `${globalAverageScore.ionos ?? 'N/A'}`,
-      `${scenarioAverageScore.ionos ?? 'N/A'}`,
       `${globalAverageScore.metadata ?? 'N/A'}`,
+      `${scenarioAverageScore.openai ?? 'N/A'}`,
+      `${scenarioAverageScore.ionos ?? 'N/A'}`,
       `${scenarioAverageScore.metadata ?? 'N/A'}`,
     ]);
   });
