@@ -54,18 +54,18 @@ async function run(): Promise<void> {
 
 
     // Abort the request after 10 min
-    const controller = new AbortController();
+  /**   const controller = new AbortController();
     const timeout = setTimeout(() => {
       controller.abort();
     }, 10 * 60 * 1000); // Set timeout for 10 minutes
     const spinner = ora('Waiting for API response...').start();
-
+*/
     // Start a heartbeat that logs every minute while waiting
-    const agent = new https.Agent({ keepAlive: true });
+ /**    const agent = new https.Agent({ keepAlive: true });
     const heartbeatInterval = setInterval(() => {
       console.log("⏱️ Still waiting for API response...");
     }, 60000); // Log every 60 seconds
-
+*/
     let response;
 
     try {
@@ -118,7 +118,7 @@ async function run(): Promise<void> {
     } catch (error: any) {
     //  clearTimeout(timeout);
     //  clearInterval(heartbeatInterval);
-      spinner.fail(`Action failed: ${error.message}`);
+    //  spinner.fail(`Action failed: ${error.message}`);
       core.setFailed(`❌ API request failed: ${error.message}`);
       return;
     }

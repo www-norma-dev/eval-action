@@ -18,14 +18,14 @@ export async function getResultsComment(
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
   const delayMs = 120_000; // 2 minutes
-  const wait = 180_000; // Wait 3 minutes
+//  const wait = 180_000; // Wait 3 minutes
   const maxAttempts = 30;
   let attempt = 0;
   let response;
   let status = '';
   let markdownResults = '';
 
-  await new Promise(res => setTimeout(res, wait));
+//  await new Promise(res => setTimeout(res, wait));
 
   while (attempt < maxAttempts) {
     try {
