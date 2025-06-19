@@ -36004,7 +36004,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
             status = ((_a = response.data) === null || _a === void 0 ? void 0 : _a.status) || '';
             console.log('------ Status------:', status);
             console.log(`🔍 Attempt ${attempt + 1}: batch status = "${status}"`);
-            if (status === 'complete' || status === 'COMPLETE') {
+            if (status === 'COMPLETE') {
                 console.log('✅ Batch complete. Processing results...');
                 break;
             }
@@ -36015,7 +36015,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
         attempt++;
         await new Promise(res => setTimeout(res, delayMs)); // Retry if batch is not finished
     }
-    if (status !== 'complete') {
+    if (status !== 'COMPLETE') {
         (0, core_1.setFailed)(`❌ Batch did not complete after ${maxAttempts} attempts.`);
         return;
     }
@@ -36037,7 +36037,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
         }
         const results = (_h = response.data) === null || _h === void 0 ? void 0 : _h.results;
         if (!results || results.length === 0) {
-            (0, core_1.setFailed)('No avergae scores found in the results.');
+            (0, core_1.setFailed)('No average scores found in the results.');
             return;
         }
         markdownResults = (0, _1.convertJsonToMarkdownTable)(scenarios, results);

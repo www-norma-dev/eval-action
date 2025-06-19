@@ -37,7 +37,7 @@ export async function getResultsComment(
       console.log('------ Status------:', status)
       console.log(`🔍 Attempt ${attempt + 1}: batch status = "${status}"`);
 
-      if (status === 'complete' || status === 'COMPLETE') {
+      if (status === 'COMPLETE') {
         console.log('✅ Batch complete. Processing results...');
         break;
       }
@@ -49,7 +49,7 @@ export async function getResultsComment(
     await new Promise(res => setTimeout(res, delayMs)); // Retry if batch is not finished
   }
 
-  if (status !== 'complete') {
+  if (status !== 'COMPLETE') {
     setFailed(`❌ Batch did not complete after ${maxAttempts} attempts.`);
     return;
   }
@@ -74,7 +74,7 @@ export async function getResultsComment(
     }
     const results = response.data?.results;
     if (!results || results.length === 0) {
-      setFailed('No avergae scores found in the results.');
+      setFailed('No average scores found in the results.');
       return;
     }
 
