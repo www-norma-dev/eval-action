@@ -36104,7 +36104,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
     let response;
     let status = '';
     let markdownResults = '';
-    await new Promise(res => setTimeout(res, delayMs));
+    await new Promise(res => setTimeout(res, wait));
     while (attempt < maxAttempts) {
         try {
             response = await axios_1.default.get(url, {
@@ -36128,7 +36128,6 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
         (0, core_1.setFailed)(`❌ Batch did not complete after ${maxAttempts} attempts.`);
         return;
     }
-    // ✅ Traitement des résultats
     try {
         if (!response || !((_d = (_c = response.data) === null || _c === void 0 ? void 0 : _c.results) === null || _d === void 0 ? void 0 : _d.scenarios)) {
             (0, core_1.setFailed)('❌ No scenarios found in the results.');
@@ -36145,9 +36144,10 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
         (0, core_1.setFailed)(`❌ Error processing results: ${err.message}`);
         return;
     }
-    // 📝 Poster le commentaire sur la PR
+    // PR comment
     try {
-        const dashboardUrl = `https://eval-norma--norma-dev.europe-west4.hosted.app/dashboard/projects/${project_id}/batch/${batch_id}/multiAgent`;
+        const dashboardUrl = response.data.url;
+        console.log("--- Dashboard url:", dashboardUrl);
         const commentMarker = '<!-- norma-eval-get-comment -->';
         const commentBody = `${commentMarker}
 ### ✅ Fetched evaluation results
@@ -36258,6 +36258,7 @@ const ora_1 = __importDefault(__nccwpck_require__(1223));
 const https_1 = __importDefault(__nccwpck_require__(5692));
 const node_abort_controller_1 = __nccwpck_require__(4470);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
+// Add a general comment to describe index.ts file
 async function run() {
     try {
         const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
@@ -36265,6 +36266,7 @@ async function run() {
             core.setFailed("❌ GITHUB_TOKEN is not set.");
             return;
         }
+        // Github configuration
         const octokit = github.getOctokit(token);
         const { owner, repo } = github.context.repo;
         // Determine branch name (from pull_request payload if available)
@@ -36287,21 +36289,19 @@ async function run() {
         const vla_credentials = core.getInput("vla_credentials");
         const test_name = core.getInput("test_name");
         const project_id = core.getInput("project_id");
-        const model_id = core.getInput("model_id");
         const model_name = core.getInput("model_name");
         const scenario_id = core.getInput("scenario_id");
         const user_id = core.getInput("user_id");
         const attempts = core.getInput("attempts");
         const type = core.getInput("type");
         console.log(`🔄 Sending API request to: ${vla_endpoint}`);
-        // Call the function to post or update the PR comment
-        await (0, postChannelSuccessComment_1.postChannelComment)(octokit, github.context, vla_endpoint, test_name, type);
+        // Abort the request after 10 min
         const controller = new node_abort_controller_1.AbortController();
         const timeout = setTimeout(() => {
             controller.abort();
         }, 10 * 60 * 1000); // Set timeout for 10 minutes
         const spinner = (0, ora_1.default)('Waiting for API response...').start();
-        // Start a heartbeat that logs every minute
+        // Start a heartbeat that logs every minute while waiting
         const agent = new https_1.default.Agent({ keepAlive: true });
         const heartbeatInterval = setInterval(() => {
             console.log("⏱️ Still waiting for API response...");
@@ -36309,28 +36309,19 @@ async function run() {
         let response;
         try {
             const postData = {
-                name: test_name,
+                test_name,
                 vla_endpoint,
                 vla_credentials,
-                model_id,
+                model_id: "0b6c4a15-bb8d-4092-82b0-f357b77c59fd",
                 model_name,
-                test_name,
                 scenario_id,
-                test_level: "standard",
-                state: {
-                    testName: test_name,
-                    apiHost: vla_endpoint,
-                    withAi: false
-                },
-                user_id: user_id,
-                project_id: project_id,
+                user_id,
+                project_id,
                 attempts
             };
-            console.log('----------- THIS IS THE URL -----------');
-            const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
-            console.log(url);
-            console.log('--------- postData --------');
+            console.log('--------- postData payload --------');
             console.log(postData);
+            const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
             // Make the API POST request
             response = await axios_1.default.post(url, postData, {
                 headers: {
@@ -36360,15 +36351,14 @@ async function run() {
         }
         const apiResponse = response.data;
         (0, core_1.startGroup)('API Response');
-        const batchId = apiResponse.batchTestId; // get batchId build during the pub/sub call
         console.log("✅ API Response Received:", apiResponse);
-        console.log("batchID from ingest event:", batchId);
         (0, core_1.endGroup)();
         // Use the current commit SHA as the commit identifier
         const commit = process.env.GITHUB_SHA || 'N/A';
         // Call the function to post or update the PR comment
-        await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, commit, vla_endpoint, type, test_name, apiResponse.report_url);
-        const batch_id = apiResponse.batchTestId;
+        await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, commit, vla_endpoint, type, test_name);
+        const batch_id = apiResponse.batchTestId; // Retrieve the batchId built during the pub/sub run
+        console.log("batchID from ingest event:", batch_id);
         await (0, getResultsComment_1.getResultsComment)(octokit, github.context, user_id, project_id, batch_id);
     }
     catch (error) {
@@ -36406,6 +36396,7 @@ function convertJsonToMarkdownTable(scenarios, globalJustification = {}) {
             `${(_g = average.metadata) !== null && _g !== void 0 ? _g : 'N/A'}`
         ]);
     });
+    // Build the markdown array in the PR
     const markdown = [
         '| ' + headers.join(' | ') + ' |',
         '| ' + headers.map(() => '---').join(' | ') + ' |',
@@ -36455,7 +36446,7 @@ const core_1 = __nccwpck_require__(7484);
  * @param result - The evaluation result string.
  * @param commit - The commit SHA or identifier.
  */
-async function postChannelSuccessComment(github, context, commit, api_host, type, test_name, report_url) {
+async function postChannelSuccessComment(github, context, commit, api_host, type, test_name) {
     (0, core_1.startGroup)('Commenting on PR');
     try {
         const commentMarker = '<!-- norma-eval-post-comment -->';

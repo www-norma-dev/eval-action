@@ -23,7 +23,6 @@ export async function postChannelSuccessComment(
   api_host: string,
   type: string,
   test_name: string,
-  report_url: string
 ): Promise<void> {
   startGroup('Commenting on PR');
 

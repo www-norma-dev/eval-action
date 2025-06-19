@@ -25,7 +25,7 @@ export async function getResultsComment(
   let status = '';
   let markdownResults = '';
 
-  await new Promise(res => setTimeout(res, delayMs));
+  await new Promise(res => setTimeout(res, wait));
 
   while (attempt < maxAttempts) {
     try {
@@ -54,7 +54,6 @@ export async function getResultsComment(
     return;
   }
 
-  // ✅ Traitement des résultats
   try {
     if (!response || !response.data?.results?.scenarios) {
       setFailed('❌ No scenarios found in the results.');
@@ -75,9 +74,10 @@ export async function getResultsComment(
     return;
   }
 
-  // 📝 Poster le commentaire sur la PR
+  // PR comment
   try {
-    const dashboardUrl = `https://eval-norma--norma-dev.europe-west4.hosted.app/dashboard/projects/${project_id}/batch/${batch_id}/multiAgent`;
+    const dashboardUrl = response.data.url;
+    console.log("--- Dashboard url:", dashboardUrl);
     const commentMarker = '<!-- norma-eval-get-comment -->';
     const commentBody = `${commentMarker}
 ### ✅ Fetched evaluation results
