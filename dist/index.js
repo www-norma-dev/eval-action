@@ -36093,7 +36093,7 @@ const core_1 = __nccwpck_require__(7484);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
 const _1 = __nccwpck_require__(9407);
 async function getResultsComment(github, context, user_id, project_id, batch_id) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
     (0, core_1.startGroup)('⏳ Waiting for batch to complete...');
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
@@ -36129,16 +36129,27 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
         return;
     }
     try {
+        // Retrieve scenario 
         if (!response || !((_d = (_c = response.data) === null || _c === void 0 ? void 0 : _c.results) === null || _d === void 0 ? void 0 : _d.scenarios)) {
-            (0, core_1.setFailed)('❌ No scenarios found in the results.');
+            (0, core_1.setFailed)('No scenarios found in the results.');
             return;
         }
         const scenarios = (_f = (_e = response.data) === null || _e === void 0 ? void 0 : _e.results) === null || _f === void 0 ? void 0 : _f.scenarios;
         if (!scenarios || scenarios.length === 0) {
-            (0, core_1.setFailed)('❌ No scenarios found in the results.');
+            (0, core_1.setFailed)('No scenarios found in the results.');
             return;
         }
-        markdownResults = (0, _1.convertJsonToMarkdownTable)(scenarios, response.data.results.globalJustification);
+        // Retrieve global result
+        if (!response || !((_g = response.data) === null || _g === void 0 ? void 0 : _g.results)) {
+            (0, core_1.setFailed)('No average scores found in the results.');
+            return;
+        }
+        const results = (_h = response.data) === null || _h === void 0 ? void 0 : _h.results;
+        if (!results || results.length === 0) {
+            (0, core_1.setFailed)('No avergae scores found in the results.');
+            return;
+        }
+        markdownResults = (0, _1.convertJsonToMarkdownTable)(scenarios, results);
     }
     catch (err) {
         (0, core_1.setFailed)(`❌ Error processing results: ${err.message}`);
@@ -36164,7 +36175,7 @@ ${markdownResults}
 <sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
 `;
         const { owner, repo } = context.repo;
-        let prNumber = (_g = context.payload.pull_request) === null || _g === void 0 ? void 0 : _g.number;
+        let prNumber = (_j = context.payload.pull_request) === null || _j === void 0 ? void 0 : _j.number;
         if (!prNumber) {
             const branchName = context.ref.replace('refs/heads/', '');
             const { data: pullRequests } = await github.rest.pulls.list({
@@ -36173,7 +36184,7 @@ ${markdownResults}
                 head: `${owner}:${branchName}`,
                 state: 'open'
             });
-            prNumber = (_h = pullRequests[0]) === null || _h === void 0 ? void 0 : _h.number;
+            prNumber = (_k = pullRequests[0]) === null || _k === void 0 ? void 0 : _k.number;
         }
         if (!prNumber) {
             console.log('⚠️ No PR found. Exiting.');
@@ -36289,7 +36300,6 @@ async function run() {
         const model_name = core.getInput("model_name");
         const scenario_id = core.getInput("scenario_id");
         const user_id = core.getInput("user_id");
-        const attempts = core.getInput("attempts");
         const type = core.getInput("type");
         console.log(`🔄 Sending API request to: ${vla_endpoint}`);
         // Abort the request after 10 min
@@ -36314,7 +36324,6 @@ async function run() {
                 scenario_id,
                 user_id,
                 project_id,
-                attempts,
                 type
             };
             console.log('--------- postData payload --------');
@@ -36351,8 +36360,8 @@ async function run() {
             */
         }
         catch (error) {
-            clearTimeout(timeout);
-            clearInterval(heartbeatInterval);
+            //  clearTimeout(timeout);
+            //  clearInterval(heartbeatInterval);
             spinner.fail(`Action failed: ${error.message}`);
             core.setFailed(`❌ API request failed: ${error.message}`);
             return;
@@ -36388,34 +36397,33 @@ async function run() {
         core.setFailed(`❌ Action failed: ${error.message}`);
     }
 }
-function convertJsonToMarkdownTable(scenarios, globalJustification = {}) {
+function convertJsonToMarkdownTable(scenarios, results) {
     if (!Array.isArray(scenarios)) {
         return '❌ No scenario data available.';
     }
     const headers = [
         'Scenario',
-        'Attempt',
-        'GPT Score',
-        'GPT Justification',
-        'Ionos Score',
-        'Ionos Justification',
-        'Metadata Score',
+        'GPT global average score',
+        'Ionos global average score',
+        'Metadata global average score',
+        'GPT scenario average score',
+        'Ionos scenario average score',
+        'Metadata scenario average score',
     ];
     const rows = [];
     scenarios.forEach((scenario, index) => {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e, _f;
         const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
-        const average = scenario.averageScores || {}; // scores
-        const gptJustification = (_b = (_a = globalJustification.openaiJustificationSummary) === null || _a === void 0 ? void 0 : _a[index]) !== null && _b !== void 0 ? _b : '-';
-        const ionosJustification = (_d = (_c = globalJustification.ionosJustificationSummary) === null || _c === void 0 ? void 0 : _c[index]) !== null && _d !== void 0 ? _d : '-';
+        const globalAverageScore = results.averageScores || {};
+        const scenarioAverageScore = scenario.averageScores || {};
         rows.push([
             scenarioName,
-            '-',
-            `${(_e = average.openai) !== null && _e !== void 0 ? _e : 'N/A'}`,
-            gptJustification,
-            `${(_f = average.ionos) !== null && _f !== void 0 ? _f : 'N/A'}`,
-            ionosJustification,
-            `${(_g = average.metadata) !== null && _g !== void 0 ? _g : 'N/A'}`
+            `${(_a = globalAverageScore.openai) !== null && _a !== void 0 ? _a : 'N/A'}`,
+            `${(_b = scenarioAverageScore.openai) !== null && _b !== void 0 ? _b : 'N/A'}`,
+            `${(_c = globalAverageScore.ionos) !== null && _c !== void 0 ? _c : 'N/A'}`,
+            `${(_d = scenarioAverageScore.ionos) !== null && _d !== void 0 ? _d : 'N/A'}`,
+            `${(_e = globalAverageScore.metadata) !== null && _e !== void 0 ? _e : 'N/A'}`,
+            `${(_f = scenarioAverageScore.metadata) !== null && _f !== void 0 ? _f : 'N/A'}`,
         ]);
     });
     // Build the markdown array in the PR

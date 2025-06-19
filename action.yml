@@ -28,9 +28,6 @@ inputs:
   user_id:
     description: "User ID"
     required: true
-  attempts:
-    description: "Attempts"
-    required: true
   batch_id:
     description: "Batch ID"
     required: true

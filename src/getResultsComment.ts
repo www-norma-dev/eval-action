@@ -55,19 +55,32 @@ export async function getResultsComment(
   }
 
   try {
+
+    // Retrieve scenario 
     if (!response || !response.data?.results?.scenarios) {
-      setFailed('❌ No scenarios found in the results.');
+      setFailed('No scenarios found in the results.');
       return;
     }
     const scenarios = response.data?.results?.scenarios;
     if (!scenarios || scenarios.length === 0) {
-      setFailed('❌ No scenarios found in the results.');
+      setFailed('No scenarios found in the results.');
+      return;
+    }
+
+    // Retrieve global result
+    if (!response || !response.data?.results) {
+      setFailed('No average scores found in the results.');
+      return;
+    }
+    const results = response.data?.results;
+    if (!results || results.length === 0) {
+      setFailed('No avergae scores found in the results.');
       return;
     }
 
     markdownResults = convertJsonToMarkdownTable(
       scenarios,
-      response.data.results.globalJustification
+      results
     );
   } catch (err: any) {
     setFailed(`❌ Error processing results: ${err.message}`);

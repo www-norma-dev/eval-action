@@ -48,7 +48,6 @@ async function run(): Promise<void> {
     const model_name: string = core.getInput("model_name");
     const scenario_id: string = core.getInput("scenario_id");
     const user_id: string = core.getInput("user_id");
-    const attempts: string = core.getInput("attempts");
     const type: string = core.getInput("type");
 
     console.log(`🔄 Sending API request to: ${vla_endpoint}`);
@@ -79,7 +78,6 @@ async function run(): Promise<void> {
         scenario_id,
         user_id,
         project_id,
-        attempts,
         type
       };
 
@@ -118,8 +116,8 @@ async function run(): Promise<void> {
 
       */
     } catch (error: any) {
-      clearTimeout(timeout);
-      clearInterval(heartbeatInterval);
+    //  clearTimeout(timeout);
+    //  clearInterval(heartbeatInterval);
       spinner.fail(`Action failed: ${error.message}`);
       core.setFailed(`❌ API request failed: ${error.message}`);
       return;
@@ -167,41 +165,42 @@ async function run(): Promise<void> {
 
 export function convertJsonToMarkdownTable(
   scenarios: any[],
-  globalJustification: {
-    openaiJustificationSummary?: string[],
-    ionosJustificationSummary?: string[]
-  } = {}
+  results: {
+    averageScores?: {
+      openai?: number,
+      ionos?: number,
+      metadata?: number
+    }
+  }
 ): string {
   if (!Array.isArray(scenarios)) {
     return '❌ No scenario data available.';
   }
   const headers = [
     'Scenario',
-    'Attempt',
-    'GPT Score',
-    'GPT Justification',
-    'Ionos Score',
-    'Ionos Justification',
-    'Metadata Score',
+    'GPT global average score',
+    'Ionos global average score',
+    'Metadata global average score',
+    'GPT scenario average score',
+    'Ionos scenario average score',
+    'Metadata scenario average score',
   ];
 
   const rows: string[][] = [];
 
   scenarios.forEach((scenario, index) => {
     const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
-    const average = scenario.averageScores || {}; // scores
-
-    const gptJustification = globalJustification.openaiJustificationSummary?.[index] ?? '-';
-    const ionosJustification = globalJustification.ionosJustificationSummary?.[index] ?? '-';
+    const globalAverageScore = results.averageScores || {};
+    const scenarioAverageScore = scenario.averageScores || {};
 
     rows.push([
       scenarioName,
-      '-',
-      `${average.openai ?? 'N/A'}`,
-      gptJustification,
-      `${average.ionos ?? 'N/A'}`,
-      ionosJustification,
-      `${average.metadata ?? 'N/A'}`
+      `${globalAverageScore.openai ?? 'N/A'}`,
+      `${scenarioAverageScore.openai ?? 'N/A'}`,
+      `${globalAverageScore.ionos ?? 'N/A'}`,
+      `${scenarioAverageScore.ionos ?? 'N/A'}`,
+      `${globalAverageScore.metadata ?? 'N/A'}`,
+      `${scenarioAverageScore.metadata ?? 'N/A'}`,
     ]);
   });
 
