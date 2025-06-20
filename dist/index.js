@@ -36273,7 +36273,7 @@ async function run() {
         const batch_id = apiResponse.batchTestId; // Retrieve the batchId built during the pub/sub run
         console.log("batchID from ingest event:", batch_id);
         */
-        const batch_id = "batch-69a3766e-942a-47e9-856d-80d1de4e550f"; // without dashboard url
+        const batch_id = "batch-cc8c2282-8c64-49a3-9e56-38c1bdefce72"; // without dashboard url
         console.log("batchID from ingest event:", batch_id);
         await (0, getResultsComment_1.getResultsComment)(octokit, github.context, user_id, project_id, batch_id);
     }
@@ -36296,19 +36296,18 @@ function convertJsonToMarkdownTable(scenarios, results) {
         'Metadata scenario average score',
     ];
     const rows = [];
-    scenarios.forEach((scenario, index) => {
-        var _a, _b, _c, _d, _e, _f;
+    scenarios.forEach((scenario) => {
         const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
         const globalAverageScore = results.averageScores || {};
         const scenarioAverageScore = scenario.averageScores || {};
         rows.push([
             scenarioName,
-            `${(_a = globalAverageScore.openai) !== null && _a !== void 0 ? _a : 'N/A'}`,
-            `${(_b = globalAverageScore.ionos) !== null && _b !== void 0 ? _b : 'N/A'}`,
-            `${(_c = globalAverageScore.metadata) !== null && _c !== void 0 ? _c : 'N/A'}`,
-            `${(_d = scenarioAverageScore.openai) !== null && _d !== void 0 ? _d : 'N/A'}`,
-            `${(_e = scenarioAverageScore.ionos) !== null && _e !== void 0 ? _e : 'N/A'}`,
-            `${(_f = scenarioAverageScore.metadata) !== null && _f !== void 0 ? _f : 'N/A'}`,
+            globalAverageScore.openai != null ? `${(globalAverageScore.openai * 20).toFixed(2)}%` : 'N/A',
+            globalAverageScore.ionos != null ? `${(globalAverageScore.ionos * 20).toFixed(2)}%` : 'N/A',
+            globalAverageScore.metadata != null ? `${(globalAverageScore.metadata * 20).toFixed(2)}%` : 'N/A',
+            scenarioAverageScore.openai != null ? `${(scenarioAverageScore.openai * 20).toFixed(2)}%` : 'N/A',
+            scenarioAverageScore.ionos != null ? `${(scenarioAverageScore.ionos * 20).toFixed(2)}%` : 'N/A',
+            scenarioAverageScore.metadata != null ? `${(scenarioAverageScore.metadata * 20).toFixed(2)}%` : 'N/A',
         ]);
     });
     // Build the markdown array in the PR
