@@ -54,18 +54,18 @@ async function run(): Promise<void> {
 
 
     // Abort the request after 10 min
-  /**   const controller = new AbortController();
+    const controller = new AbortController();
     const timeout = setTimeout(() => {
       controller.abort();
     }, 10 * 60 * 1000); // Set timeout for 10 minutes
     const spinner = ora('Waiting for API response...').start();
-*/
+
     // Start a heartbeat that logs every minute while waiting
- /**    const agent = new https.Agent({ keepAlive: true });
+     const agent = new https.Agent({ keepAlive: true });
     const heartbeatInterval = setInterval(() => {
       console.log("⏱️ Still waiting for API response...");
     }, 60000); // Log every 60 seconds
-*/
+
     let response;
 
     try {
@@ -87,7 +87,6 @@ async function run(): Promise<void> {
       const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
 
       // Make the API POST request
-      /** 
       response = await axios.post(url,
         postData,
         {
@@ -114,27 +113,25 @@ async function run(): Promise<void> {
 
       spinner.succeed('API response received.');
 
-      */
     } catch (error: any) {
-    //  clearTimeout(timeout);
-    //  clearInterval(heartbeatInterval);
-    //  spinner.fail(`Action failed: ${error.message}`);
+      clearTimeout(timeout);
+      clearInterval(heartbeatInterval);
+      spinner.fail(`Action failed: ${error.message}`);
       core.setFailed(`❌ API request failed: ${error.message}`);
       return;
     }
     
-   /** const apiResponse: any = response.data;
+    const apiResponse: any = response.data;
     
     startGroup('API Response');
     console.log("✅ API Response Received:", apiResponse);
     endGroup();
-    */
 
     // Use the current commit SHA as the commit identifier
     const commit = process.env.GITHUB_SHA || 'N/A';
 
     // Call the function to post or update the PR comment
-    /** 
+
     await postChannelSuccessComment(
       octokit,
       github.context,
@@ -146,9 +143,6 @@ async function run(): Promise<void> {
     
     const batch_id = apiResponse.batchTestId; // Retrieve the batchId built during the pub/sub run
     console.log("batchID from ingest event:", batch_id);
-    */
-   const batch_id = "batch-cc8c2282-8c64-49a3-9e56-38c1bdefce72" // without dashboard url
-   console.log("batchID from ingest event:", batch_id);
 
     await getResultsComment(
       octokit,
@@ -186,6 +180,13 @@ export function convertJsonToMarkdownTable(
     'Metadata scenario average score',
   ];
 
+  function scoreToEmoji(score: number | null | undefined): string {
+    if (score == null) return "⬜";
+    if (score >= 0.7) return "🟩";
+    if (score >= 0.3) return "🟧";
+    return "🟥";
+  }
+
   const rows: string[][] = [];
 
   scenarios.forEach((scenario) => {
@@ -195,12 +196,12 @@ export function convertJsonToMarkdownTable(
 
     rows.push([
       scenarioName,
-      globalAverageScore.openai != null ? `${(globalAverageScore.openai * 20).toFixed(2)}%` : 'N/A',
-      globalAverageScore.ionos != null ? `${(globalAverageScore.ionos * 20).toFixed(2)}%` : 'N/A',
-      globalAverageScore.metadata != null ? `${(globalAverageScore.metadata * 20).toFixed(2)}%` : 'N/A',
-      scenarioAverageScore.openai != null ? `${(scenarioAverageScore.openai * 20).toFixed(2)}%`: 'N/A',
-      scenarioAverageScore.ionos != null ? `${(scenarioAverageScore.ionos * 20).toFixed(2)}%`: 'N/A',
-      scenarioAverageScore.metadata != null ? `${(scenarioAverageScore.metadata * 20).toFixed(2)}%`: 'N/A',
+      globalAverageScore.openai != null ? `${scoreToEmoji(globalAverageScore.openai)} ${(globalAverageScore.openai * 20).toFixed(2)}%` : 'N/A',
+      globalAverageScore.ionos != null ? `${scoreToEmoji(globalAverageScore.ionos)} ${(globalAverageScore.ionos * 20).toFixed(2)}%` : 'N/A',
+      globalAverageScore.metadata != null ? `${scoreToEmoji(globalAverageScore.metadata)} ${(globalAverageScore.metadata * 20).toFixed(2)}%` : 'N/A',
+      scenarioAverageScore.openai != null ? `${scoreToEmoji(scenarioAverageScore.openai)} ${(scenarioAverageScore.openai * 20).toFixed(2)}%`: 'N/A',
+      scenarioAverageScore.ionos != null ? `${scoreToEmoji(scenarioAverageScore.ionos)} ${(scenarioAverageScore.ionos * 20).toFixed(2)}%`: 'N/A',
+      scenarioAverageScore.metadata != null ? `${scoreToEmoji(scenarioAverageScore.metadata)} ${(scenarioAverageScore.metadata * 20).toFixed(2)}%`: 'N/A',
     ]);
   });
 
