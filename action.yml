@@ -4,24 +4,38 @@ inputs:
   repoToken:
     description: "The GITHUB_TOKEN secret"
     required: false
-  api_host:
-    description: "API host"
+  vla_endpoint:
+    description: "VLA Endpoint"
     required: true
-  x_api_key:
-    description: "API key"
-    required: false
-  type:
-    description: "Type"
+  vla_credentials:
+    description: "VLA Credentials"
     required: true
   test_name:
     description: "Test name"
     required: true
-  scenario_preset_id:
-    description: "Scenarios"
+  project_id:
+    description: "Project"
     required: true
   model_id:
     description: "Model"
     required: true
+  model_name:
+    description: "Model name"
+    required: true
+  scenario_id:
+    description: "Scenarios"
+    required: true
+  user_id:
+    description: "User ID"
+    required: true
+  batch_id:
+    description: "Batch ID"
+    required: true
+  type:
+    description: "MultiAgent or extractor"
+    required: true
+
+    
 runs:
   using: "node16"
   main: "dist/index.js"

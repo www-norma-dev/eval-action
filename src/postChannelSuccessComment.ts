@@ -19,29 +19,22 @@ import { Context } from '@actions/github/lib/context';
 export async function postChannelSuccessComment(
   github: InstanceType<typeof GitHub>,
   context: Context,
-  result: string,
   commit: string,
   api_host: string,
   type: string,
   test_name: string,
-  report_url: string
 ): Promise<void> {
   startGroup('Commenting on PR');
 
   try {
-    const commentMarker = '<!-- norma-eval-comment -->';
+    const commentMarker = '<!-- norma-eval-post-comment -->';
     const commentBody = `${commentMarker}
 ### 🚀 Automatic Evaluation Report
 - **API Host:** \`${api_host}\`
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
-- **EVAL Result:** [url](${report_url})
-**Result:** ${result}  
 
 <sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
-
-<sub>🔄 _This comment was posted automatically by [Eval Action](${report_url})._</sub>
-url ${report_url}
 `;
 
     const { owner, repo } = context.repo;
@@ -132,17 +125,17 @@ url ${report_url}
 export async function postChannelComment(
   github: InstanceType<typeof GitHub>,
   context: Context,
-  api_host: string,
+  vla_endpoint: string,
   type: string,
   test_name: string
 ): Promise<void> {
   startGroup('Commenting on PR');
 
   try {
-    const commentMarker = '<!-- norma-eval-comment -->';
+    const commentMarker = '<!-- norma-eval-post-comment -->';
     const commentBody = `${commentMarker}
 ### 🚀 Automatic Evaluation Report
-- **API Host:** \`${api_host}\`
+- **API Host:** \`${vla_endpoint}\`
 - **Type:** \`${type}\`
 - **Test Name:** \`${test_name}\`
 
