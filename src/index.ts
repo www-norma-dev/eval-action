@@ -188,19 +188,19 @@ export function convertJsonToMarkdownTable(
 
   const rows: string[][] = [];
 
-  scenarios.forEach((scenario, index) => {
+  scenarios.forEach((scenario) => {
     const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
     const globalAverageScore = results.averageScores || {};
     const scenarioAverageScore = scenario.averageScores || {};
 
     rows.push([
       scenarioName,
-      `${globalAverageScore.openai ?? 'N/A'}`,
-      `${globalAverageScore.ionos ?? 'N/A'}`,
-      `${globalAverageScore.metadata ?? 'N/A'}`,
-      `${scenarioAverageScore.openai ?? 'N/A'}`,
-      `${scenarioAverageScore.ionos ?? 'N/A'}`,
-      `${scenarioAverageScore.metadata ?? 'N/A'}`,
+      globalAverageScore.openai != null ? `${(globalAverageScore.openai * 20).toFixed(2)}%` : 'N/A',
+      globalAverageScore.ionos != null ? `${(globalAverageScore.ionos * 20).toFixed(2)}%` : 'N/A',
+      globalAverageScore.metadata != null ? `${(globalAverageScore.metadata * 20).toFixed(2)}%` : 'N/A',
+      scenarioAverageScore.openai != null ? `${(scenarioAverageScore.openai * 20).toFixed(2)}%`: 'N/A',
+      scenarioAverageScore.ionos != null ? `${(scenarioAverageScore.ionos * 20).toFixed(2)}%`: 'N/A',
+      scenarioAverageScore.metadata != null ? `${(scenarioAverageScore.metadata * 20).toFixed(2)}%`: 'N/A',
     ]);
   });
 
