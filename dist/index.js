@@ -36315,6 +36315,7 @@ async function run() {
             console.log("⏱️ Still waiting for API response...");
         }, 60000); // Log every 60 seconds
         let response;
+        const attempts = 1; // 1 attempt by default
         try {
             const postData = {
                 test_name,
@@ -36325,6 +36326,7 @@ async function run() {
                 scenario_id,
                 user_id,
                 project_id,
+                attempts,
                 type
             };
             console.log('--------- postData payload --------');

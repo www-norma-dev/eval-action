@@ -67,6 +67,7 @@ async function run(): Promise<void> {
     }, 60000); // Log every 60 seconds
 
     let response;
+    const attempts = 1; // 1 attempt by default
 
     try {
       const postData = {
@@ -78,6 +79,7 @@ async function run(): Promise<void> {
         scenario_id,
         user_id,
         project_id,
+        attempts,
         type
       };
 
