@@ -37,7 +37,7 @@ export async function getResultsComment(
       console.log('------ Status------:', status)
       console.log(`🔍 Attempt ${attempt + 1}: batch status = "${status}"`);
 
-      if (status === 'COMPLETE') {
+      if (status === 'Complete') {
         console.log('✅ Batch complete. Processing results...');
         break;
       }
@@ -49,7 +49,7 @@ export async function getResultsComment(
     await new Promise(res => setTimeout(res, delayMs)); // Retry if batch is not finished
   }
 
-  if (status !== 'COMPLETE') {
+  if (status !== 'Complete') {
     setFailed(`❌ Batch did not complete after ${maxAttempts} attempts.`);
     return;
   }

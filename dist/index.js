@@ -36004,7 +36004,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
             status = ((_a = response.data) === null || _a === void 0 ? void 0 : _a.status) || '';
             console.log('------ Status------:', status);
             console.log(`🔍 Attempt ${attempt + 1}: batch status = "${status}"`);
-            if (status === 'COMPLETE') {
+            if (status === 'Complete') {
                 console.log('✅ Batch complete. Processing results...');
                 break;
             }
@@ -36015,7 +36015,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
         attempt++;
         await new Promise(res => setTimeout(res, delayMs)); // Retry if batch is not finished
     }
-    if (status !== 'COMPLETE') {
+    if (status !== 'Complete') {
         (0, core_1.setFailed)(`❌ Batch did not complete after ${maxAttempts} attempts.`);
         return;
     }
