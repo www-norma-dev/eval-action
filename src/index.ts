@@ -52,7 +52,7 @@ async function run(): Promise<void> {
 
     console.log(`🔄 Sending API request to: ${vla_endpoint}`);
 
-
+/** 
     // Abort the request after 10 min
     const controller = new AbortController();
     const timeout = setTimeout(() => {
@@ -65,6 +65,7 @@ async function run(): Promise<void> {
     const heartbeatInterval = setInterval(() => {
       console.log("⏱️ Still waiting for API response...");
     }, 60000); // Log every 60 seconds
+    */
 
     let response;
     const attempts = 1; // 1 attempt by default
@@ -87,7 +88,7 @@ async function run(): Promise<void> {
       console.log(postData);
 
       const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
-
+/** 
       // Make the API POST request
       response = await axios.post(url,
         postData,
@@ -103,6 +104,7 @@ async function run(): Promise<void> {
 
       clearTimeout(timeout);
       clearInterval(heartbeatInterval);
+      
 
       console.log('---------- RESPONSE ---------');
       console.log(response.data);
@@ -115,25 +117,27 @@ async function run(): Promise<void> {
 
       spinner.succeed('API response received.');
 
-    } catch (error: any) {
-      clearTimeout(timeout);
-      clearInterval(heartbeatInterval);
-      spinner.fail(`Action failed: ${error.message}`);
+      */
+    } 
+    catch (error: any) {
+     // clearTimeout(timeout);
+    //  clearInterval(heartbeatInterval);
+      //spinner.fail(`Action failed: ${error.message}`);
       core.setFailed(`❌ API request failed: ${error.message}`);
       return;
     }
     
-    const apiResponse: any = response.data;
+    //const apiResponse: any = response.data;
     
     startGroup('API Response');
-    console.log("✅ API Response Received:", apiResponse);
+    //console.log("✅ API Response Received:", apiResponse);
     endGroup();
 
     // Use the current commit SHA as the commit identifier
     const commit = process.env.GITHUB_SHA || 'N/A';
 
     // Call the function to post or update the PR comment
-
+/** 
     await postChannelSuccessComment(
       octokit,
       github.context,
@@ -142,8 +146,10 @@ async function run(): Promise<void> {
       type,
       test_name,
     );
+ */   
     
-    const batch_id = apiResponse.batchTestId; // Retrieve the batchId built during the pub/sub run
+ //   const batch_id = apiResponse.batchTestId; // Retrieve the batchId built during the pub/sub run
+    const batch_id = "batch-b924b61b-06a9-4320-9d2b-f10dc49bea41"
     console.log("batchID from ingest event:", batch_id);
 
     await getResultsComment(
@@ -184,9 +190,11 @@ export function convertJsonToMarkdownTable(
 
   function scoreToEmoji(score: number | null | undefined): string {
     if (score == null) return "⬜";
-    if (score >= 0.7) return "🟩";
-    if (score >= 0.3) return "🟧";
-    return "🟥";
+    const percent = score * 20;
+
+    if (percent < 30) return "🟥";
+    if (percent <= 70) return "🟧";
+    return "🟩";      
   }
 
   const rows: string[][] = [];
@@ -198,12 +206,12 @@ export function convertJsonToMarkdownTable(
 
     rows.push([
       scenarioName,
-      globalAverageScore.openai != null ? `${scoreToEmoji(globalAverageScore.openai)} ${(globalAverageScore.openai * 20).toFixed(2)}%` : 'N/A',
-      globalAverageScore.ionos != null ? `${scoreToEmoji(globalAverageScore.ionos)} ${(globalAverageScore.ionos * 20).toFixed(2)}%` : 'N/A',
-      globalAverageScore.metadata != null ? `${scoreToEmoji(globalAverageScore.metadata)} ${(globalAverageScore.metadata * 20).toFixed(2)}%` : 'N/A',
-      scenarioAverageScore.openai != null ? `${scoreToEmoji(scenarioAverageScore.openai)} ${(scenarioAverageScore.openai * 20).toFixed(2)}%`: 'N/A',
-      scenarioAverageScore.ionos != null ? `${scoreToEmoji(scenarioAverageScore.ionos)} ${(scenarioAverageScore.ionos * 20).toFixed(2)}%`: 'N/A',
-      scenarioAverageScore.metadata != null ? `${scoreToEmoji(scenarioAverageScore.metadata)} ${(scenarioAverageScore.metadata * 20).toFixed(2)}%`: 'N/A',
+      globalAverageScore.openai != null ? `${scoreToEmoji(globalAverageScore.openai)} ${(globalAverageScore.openai * 20).toFixed(2)}%` : '⬜',
+      globalAverageScore.ionos != null ? `${scoreToEmoji(globalAverageScore.ionos)} ${(globalAverageScore.ionos * 20).toFixed(2)}%` : '⬜',
+      globalAverageScore.metadata != null ? `${scoreToEmoji(globalAverageScore.metadata)} ${(globalAverageScore.metadata * 20).toFixed(2)}%` : '⬜',
+      scenarioAverageScore.openai != null ? `${scoreToEmoji(scenarioAverageScore.openai)} ${(scenarioAverageScore.openai * 20).toFixed(2)}%`: '⬜',
+      scenarioAverageScore.ionos != null ? `${scoreToEmoji(scenarioAverageScore.ionos)} ${(scenarioAverageScore.ionos * 20).toFixed(2)}%`: '⬜',
+      scenarioAverageScore.metadata != null ? `${scoreToEmoji(scenarioAverageScore.metadata)} ${(scenarioAverageScore.metadata * 20).toFixed(2)}%`: '⬜',
     ]);
   });
 
