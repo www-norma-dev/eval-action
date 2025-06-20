@@ -147,7 +147,7 @@ async function run(): Promise<void> {
     const batch_id = apiResponse.batchTestId; // Retrieve the batchId built during the pub/sub run
     console.log("batchID from ingest event:", batch_id);
     */
-   const batch_id = "batch-69a3766e-942a-47e9-856d-80d1de4e550f" // without dashboard url
+   const batch_id = "batch-cc8c2282-8c64-49a3-9e56-38c1bdefce72" // without dashboard url
    console.log("batchID from ingest event:", batch_id);
 
     await getResultsComment(
