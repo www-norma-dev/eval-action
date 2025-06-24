@@ -1,11 +1,18 @@
 import { endGroup, startGroup, info, setFailed } from '@actions/core';
+import convertJsonToMarkdownTable from '../../utils/markdown';
 import type { GitHub } from '@actions/github/lib/utils';
 import { Context } from '@actions/github/lib/context';
 import axios from 'axios';
-import convertJsonToMarkdownTable from '../../utils/markdown';
+
 /**
- * 
- * 
+ * Code that runs after the POST request that starts a model evaluation.
+ * It does the following:
+ *   1. Waits for the evaluation batch to finish (by polling a GET endpoint),
+ *   2. Retrieves the evaluation results from the backend,
+ *   3. Converts the results to a Markdown table,
+ *   4. Creates or updates a comment with the results on the related Pull Request.
+ *
+ * It uses the user ID, project ID, and batch ID from the POST response.
  * @param github 
  * @param context 
  * @param user_id - Corresponds to the user identifier
@@ -13,6 +20,7 @@ import convertJsonToMarkdownTable from '../../utils/markdown';
  * @param batch_id - Batch id retrieved during the previous POST call
  * @returns 
  */
+
 export async function runGetComment(
   github: InstanceType<typeof GitHub>,
   context: Context,
@@ -22,19 +30,17 @@ export async function runGetComment(
 ): Promise<void> {
   startGroup('⏳ Waiting for batch to complete...');
 
-  console.log("Params: user id:", user_id, "-----project id:", project_id, "-----batch id:", batch_id); 
+  console.log("----- params:", user_id, project_id, batch_id)
   const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
   const delayMs = 120_000; // 2 minutes
-  const wait = 180_000; // 3 minutes
   const maxAttempts = 30;
   let attempt = 0;
   let response;
   let status = '';
   let markdownResults = '';
 
-  new Promise(res => setTimeout(res, wait)); // Wait 3 mins to let Post request finish
 
   while (attempt < maxAttempts) {
     try {

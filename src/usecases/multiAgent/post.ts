@@ -1,10 +1,10 @@
+import { endGroup, startGroup, info, setFailed } from '@actions/core';
+import type { GitHub } from '@actions/github/lib/utils';
+import { Context } from '@actions/github/lib/context';
 import * as core from '@actions/core';
-import ora from 'ora';
 import https from 'https';
 import axios from 'axios';
-import { Context } from '@actions/github/lib/context';
-import type { GitHub } from '@actions/github/lib/utils';
-import { endGroup, startGroup, info, setFailed } from '@actions/core';
+import ora from 'ora';
 
 /**
  * Posts or updates a comment on a pull request with the evaluation report.
@@ -82,7 +82,8 @@ export async function runPostComment(
     clearInterval(heartbeat);
     spinner.succeed('✅ API response received.');
 
-    batch_id = response.data.batchTestId;
+    //batch_id = response.data.batchTestId;
+    batch_id = "batch-386d668c-fac9-4919-bb84-92d1b440124f";
     console.log("----batch id ----: ", batch_id)
 
     if (!batch_id) {
