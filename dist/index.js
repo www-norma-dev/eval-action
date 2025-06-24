@@ -36108,6 +36108,7 @@ const markdown_1 = __importDefault(__nccwpck_require__(3704));
 async function runGetComment(github, context, user_id, project_id, batch_id) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
     (0, core_1.startGroup)('⏳ Waiting for batch to complete...');
+    console.log("Params: user id:", user_id, "-----project id:", project_id, "-----batch id:", batch_id);
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
     const delayMs = 120000; // 2 minutes
@@ -36118,7 +36119,6 @@ async function runGetComment(github, context, user_id, project_id, batch_id) {
     let status = '';
     let markdownResults = '';
     new Promise(res => setTimeout(res, wait)); // Wait 3 mins to let Post request finish
-    console.log("Batch id received:", batch_id);
     while (attempt < maxAttempts) {
         try {
             response = await axios_1.default.get(url, {
@@ -36338,7 +36338,8 @@ async function runPostComment(github, context, commit) {
         clearTimeout(timeout);
         clearInterval(heartbeat);
         spinner.succeed('✅ API response received.');
-        let batch_id = response.data.batchTestId;
+        batch_id = response.data.batchTestId;
+        console.log("----batch id ----: ", batch_id);
         if (!batch_id) {
             throw new Error("No batchTestId returned in the response.");
         }

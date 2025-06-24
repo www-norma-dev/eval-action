@@ -22,6 +22,7 @@ export async function runGetComment(
 ): Promise<void> {
   startGroup('⏳ Waiting for batch to complete...');
 
+  console.log("Params: user id:", user_id, "-----project id:", project_id, "-----batch id:", batch_id); 
   const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
@@ -34,7 +35,6 @@ export async function runGetComment(
   let markdownResults = '';
 
   new Promise(res => setTimeout(res, wait)); // Wait 3 mins to let Post request finish
-  console.log("Batch id received:", batch_id); 
 
   while (attempt < maxAttempts) {
     try {
