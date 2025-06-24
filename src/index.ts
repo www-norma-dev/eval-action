@@ -40,15 +40,11 @@ async function run(): Promise<void> {
     const commit = process.env.GITHUB_SHA || 'N/A';
 
     // Call the function to run a batch and comment on the PR
-  //  const {
-    //  batch_id,
-      //user_id,
-     // project_id
-   // } = await runPostComment(octokit, github.context, commit);
-
-   let batch_id = "batch-386d668c-fac9-4919-bb84-92d1b440124f";
-   let user_id = "0lE3okNgmKaPUQXbCikgsazgTNi1";
-   let project_id = "f5ee240b-da4d-4bb1-8599-f175939eaa3f"
+    const {
+      batch_id,
+      user_id,
+      project_id
+    } = await runPostComment(octokit, github.context, commit);
 
 
     // Call the function to fetch results and comment on the PR

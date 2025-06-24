@@ -32,7 +32,7 @@ inputs:
     description: "Batch ID"
     required: true
   type:
-    description: "MultiAgent or extractor"
+    description: "MultiAgent"
     required: true
 
     

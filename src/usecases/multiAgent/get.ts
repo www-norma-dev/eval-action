@@ -30,7 +30,7 @@ export async function runGetComment(
 ): Promise<void> {
   startGroup('⏳ Waiting for batch to complete...');
 
-  console.log("----- params:", user_id, project_id, batch_id)
+  console.log("Received payload used to fetch results (user_id, project_id, batch_id):", user_id, project_id, batch_id)
   const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 

@@ -82,9 +82,7 @@ export async function runPostComment(
     clearInterval(heartbeat);
     spinner.succeed('✅ API response received.');
 
-    //batch_id = response.data.batchTestId;
-    batch_id = "batch-386d668c-fac9-4919-bb84-92d1b440124f";
-    console.log("----batch id ----: ", batch_id)
+    batch_id = response.data.batchTestId;
 
     if (!batch_id) {
       throw new Error("No batchTestId returned in the response.");
