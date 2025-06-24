@@ -26,12 +26,14 @@ export async function runGetComment(
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
   const delayMs = 120_000; // 2 minutes
+  const wait = 180_000; // 3 minutes
   const maxAttempts = 30;
   let attempt = 0;
   let response;
   let status = '';
   let markdownResults = '';
 
+  new Promise(res => setTimeout(res, wait)); // Wait 3 mins to let Post request finish
   console.log("Batch id received:", batch_id); 
 
   while (attempt < maxAttempts) {
