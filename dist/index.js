@@ -36302,7 +36302,7 @@ async function runPostComment(github, context, commit) {
     var _a, _b;
     (0, core_1.startGroup)('Launching evaluation request...');
     // Retrieve inputs from the user's workflow file
-    const vla_endpoint = core.getInput("vla_endpoint");
+    const vla_endpoint = core.getInput("vla_endpoint") || core.getInput("api_host");
     const vla_credentials = core.getInput("vla_credentials");
     const test_name = core.getInput("test_name");
     const project_id = core.getInput("project_id");
@@ -36311,6 +36311,10 @@ async function runPostComment(github, context, commit) {
     const user_id = core.getInput("user_id");
     const type = core.getInput("type");
     const attempts = 1;
+    console.log("----- Endpoint received:---", vla_endpoint);
+    if (!vla_endpoint) {
+        throw new Error("❌ 'vla_endpoint' or 'api_host' input is required but was not provided.");
+    }
     const postData = {
         test_name,
         vla_endpoint,

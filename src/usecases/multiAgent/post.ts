@@ -36,7 +36,7 @@ export async function runPostComment(
   startGroup('Launching evaluation request...');
 
   // Retrieve inputs from the user's workflow file
-  const vla_endpoint: string = core.getInput("vla_endpoint");
+  const vla_endpoint: string = core.getInput("vla_endpoint") || core.getInput("api_host");
   const vla_credentials: string = core.getInput("vla_credentials");
   const test_name: string = core.getInput("test_name");
   const project_id: string = core.getInput("project_id");
@@ -45,6 +45,12 @@ export async function runPostComment(
   const user_id: string = core.getInput("user_id");
   const type: string = core.getInput("type");
   const attempts = 1;
+
+  console.log("----- Endpoint received:---", vla_endpoint);
+
+  if (!vla_endpoint) {
+    throw new Error("❌ 'vla_endpoint' or 'api_host' input is required but was not provided.");
+  }
 
   const postData = {
     test_name,
