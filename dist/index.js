@@ -11163,81 +11163,6 @@ function populateMaps (extensions, types) {
 
 /***/ }),
 
-/***/ 4470:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { EventEmitter } = __nccwpck_require__(4434);
-
-class AbortSignal {
-  constructor() {
-    this.eventEmitter = new EventEmitter();
-    this.onabort = null;
-    this.aborted = false;
-    this.reason = undefined;
-  }
-  toString() {
-    return "[object AbortSignal]";
-  }
-  get [Symbol.toStringTag]() {
-    return "AbortSignal";
-  }
-  removeEventListener(name, handler) {
-    this.eventEmitter.removeListener(name, handler);
-  }
-  addEventListener(name, handler) {
-    this.eventEmitter.on(name, handler);
-  }
-  dispatchEvent(type) {
-    const event = { type, target: this };
-    const handlerName = `on${type}`;
-
-    if (typeof this[handlerName] === "function") this[handlerName](event);
-
-    this.eventEmitter.emit(type, event);
-  }
-  throwIfAborted() {
-    if (this.aborted) {
-      throw this.reason;
-    }
-  }
-  static abort(reason) {
-    const controller = new AbortController();
-    controller.abort();
-    return controller.signal;
-  }
-  static timeout(time) {
-    const controller = new AbortController();
-    setTimeout(() => controller.abort(new Error("TimeoutError")), time);
-    return controller.signal;
-  }
-}
-class AbortController {
-  constructor() {
-    this.signal = new AbortSignal();
-  }
-  abort(reason) {
-    if (this.signal.aborted) return;
-
-    this.signal.aborted = true;
-
-    if (reason) this.signal.reason = reason;
-    else this.signal.reason = new Error("AbortError");
-
-    this.signal.dispatchEvent("abort");
-  }
-  toString() {
-    return "[object AbortController]";
-  }
-  get [Symbol.toStringTag]() {
-    return "AbortController";
-  }
-}
-
-module.exports = { AbortController, AbortSignal };
-
-
-/***/ }),
-
 /***/ 5560:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -36079,7 +36004,85 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 400:
+/***/ 9407:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const get_1 = __nccwpck_require__(8803);
+const post_1 = __nccwpck_require__(8193);
+const github = __importStar(__nccwpck_require__(3228));
+const core = __importStar(__nccwpck_require__(7484));
+/**
+ * This is the main file to have all jobs being ran by a .yaml workflow called from a Github repository
+*/
+async function run() {
+    try {
+        const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
+        if (!token) {
+            core.setFailed("❌ GITHUB_TOKEN is not set.");
+            return;
+        }
+        // Github configuration
+        const octokit = github.getOctokit(token);
+        const { owner, repo } = github.context.repo;
+        // Determine branch name (from pull_request payload if available)
+        const branchName = github.context.payload.pull_request
+            ? github.context.payload.pull_request.head.ref
+            : github.context.ref.replace("refs/heads/", "");
+        console.log(`📌 Current branch: ${branchName}`);
+        // Fetch open PRs with this branch as head
+        const { data: pullRequests } = await octokit.rest.pulls.list({
+            owner,
+            repo,
+            head: `${owner}:${branchName}`,
+            state: "open",
+        });
+        if (pullRequests.length === 0) {
+            console.log("⚠️ No open PR found for this branch. Skipping comment.");
+        }
+        // Use the current commit SHA as the commit identifier
+        const commit = process.env.GITHUB_SHA || 'N/A';
+        // Call the function to run a batch and comment on the PR
+        const { batch_id, user_id, project_id } = await (0, post_1.runPostComment)(octokit, github.context, commit);
+        // Call the function to fetch results and comment on the PR
+        await (0, get_1.runGetComment)(octokit, github.context, user_id, project_id, batch_id);
+    }
+    catch (error) {
+        console.error(`❌ Error : ${error}`);
+        core.setFailed(`❌ Action failed: ${error.message}`);
+    }
+}
+run();
+
+
+/***/ }),
+
+/***/ 8803:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -36088,30 +36091,44 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getResultsComment = void 0;
+exports.runGetComment = void 0;
 const core_1 = __nccwpck_require__(7484);
+const markdown_1 = __importDefault(__nccwpck_require__(3704));
 const axios_1 = __importDefault(__nccwpck_require__(7269));
-const _1 = __nccwpck_require__(9407);
-async function getResultsComment(github, context, user_id, project_id, batch_id) {
+/**
+ * Code that runs after the POST request that starts a model evaluation.
+ * It does the following:
+ *   1. Waits for the evaluation batch to finish (by polling a GET endpoint),
+ *   2. Retrieves the evaluation results from the backend,
+ *   3. Converts the results to a Markdown table,
+ *   4. Creates or updates a comment with the results on the related Pull Request.
+ *
+ * It uses the user ID, project ID, and batch ID from the POST response.
+ * @param github
+ * @param context
+ * @param user_id - Corresponds to the user identifier
+ * @param project_id - Corresponds to the project identifier
+ * @param batch_id - Batch id retrieved during the previous POST call
+ * @returns
+ */
+async function runGetComment(github, context, user_id, project_id, batch_id) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
     (0, core_1.startGroup)('⏳ Waiting for batch to complete...');
+    console.log("Received payload used to fetch results (user_id, project_id, batch_id):", user_id, project_id, batch_id);
     const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
     const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
     const delayMs = 120000; // 2 minutes
-    //  const wait = 180_000; // Wait 3 minutes
     const maxAttempts = 30;
     let attempt = 0;
     let response;
     let status = '';
     let markdownResults = '';
-    //  await new Promise(res => setTimeout(res, wait));
     while (attempt < maxAttempts) {
         try {
             response = await axios_1.default.get(url, {
                 headers: { 'Content-Type': 'application/json' }
             });
             status = ((_a = response.data) === null || _a === void 0 ? void 0 : _a.status) || '';
-            console.log('------ Status------:', status);
             console.log(`🔍 Attempt ${attempt + 1}: batch status = "${status}"`);
             if (status === 'Complete') {
                 console.log('✅ Batch complete. Processing results...');
@@ -36149,7 +36166,7 @@ async function getResultsComment(github, context, user_id, project_id, batch_id)
             (0, core_1.setFailed)('No average scores found in the results.');
             return;
         }
-        markdownResults = (0, _1.convertJsonToMarkdownTable)(scenarios, results);
+        markdownResults = (0, markdown_1.default)(scenarios, results);
     }
     catch (err) {
         (0, core_1.setFailed)(`❌ Error processing results: ${err.message}`);
@@ -36220,12 +36237,12 @@ ${markdownResults}
         (0, core_1.endGroup)();
     }
 }
-exports.getResultsComment = getResultsComment;
+exports.runGetComment = runGetComment;
 
 
 /***/ }),
 
-/***/ 9407:
+/***/ 8193:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -36257,125 +36274,176 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.convertJsonToMarkdownTable = void 0;
-const core = __importStar(__nccwpck_require__(7484));
-const github = __importStar(__nccwpck_require__(3228));
-const postChannelSuccessComment_1 = __nccwpck_require__(3278);
-const getResultsComment_1 = __nccwpck_require__(400);
+exports.runPostComment = void 0;
 const core_1 = __nccwpck_require__(7484);
-const ora_1 = __importDefault(__nccwpck_require__(1223));
+const core = __importStar(__nccwpck_require__(7484));
 const https_1 = __importDefault(__nccwpck_require__(5692));
-const node_abort_controller_1 = __nccwpck_require__(4470);
 const axios_1 = __importDefault(__nccwpck_require__(7269));
-// Add a general comment to describe index.ts file
-async function run() {
+const ora_1 = __importDefault(__nccwpck_require__(1223));
+/**
+ * Posts or updates a comment on a pull request with the evaluation report.
+ * Make sure your workflow YAML grants the GITHUB_TOKEN proper permissions:
+ *
+ * permissions:
+ *   contents: read
+ *   pull-requests: write
+ *   issues: write
+ *
+ * @param github - An instance of Octokit authenticated with GITHUB_TOKEN.
+ * @param context - The GitHub Actions context.
+ * @param result - The evaluation result string.
+ * @param commit - The commit SHA or identifier.
+ * @param api_host - This is corresponding to "vla_endpoint".
+ * @param type - The use case: either "multiAgent" (Vitual leasing agent) or "extractor" (for PDFs).
+ * @param test_name - The batch name to be displayed.
+ * @returns data to call runGetComment function in index.ts (batchTestId, user_id, etc.).
+ */
+async function runPostComment(github, context, commit) {
+    var _a, _b;
+    (0, core_1.startGroup)('Launching evaluation request...');
+    // Retrieve inputs from the user's workflow file
+    const vla_endpoint = core.getInput("vla_endpoint") || core.getInput("api_host");
+    const vla_credentials = core.getInput("vla_credentials");
+    const test_name = core.getInput("test_name");
+    const project_id = core.getInput("project_id");
+    const model_name = core.getInput("model_name");
+    const scenario_id = core.getInput("scenario_id");
+    const user_id = core.getInput("user_id");
+    const type = core.getInput("type");
+    const attempts = 1;
+    console.log("----- Endpoint received:---", vla_endpoint);
+    if (!vla_endpoint) {
+        throw new Error("❌ 'vla_endpoint' or 'api_host' input is required but was not provided.");
+    }
+    const postData = {
+        test_name,
+        vla_endpoint,
+        vla_credentials,
+        model_id: "0b6c4a15-bb8d-4092-82b0-f357b77c59fd",
+        model_name,
+        scenario_id,
+        user_id,
+        project_id,
+        attempts,
+        type
+    };
+    const spinner = (0, ora_1.default)('Waiting for API response...').start();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10 * 60 * 1000);
+    const agent = new https_1.default.Agent({ keepAlive: true });
+    const heartbeat = setInterval(() => {
+        console.log("⏱️ Still waiting for API response...");
+    }, 60000);
+    let batch_id = "";
     try {
-        const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
-        if (!token) {
-            core.setFailed("❌ GITHUB_TOKEN is not set.");
-            return;
-        }
-        // Github configuration
-        const octokit = github.getOctokit(token);
-        const { owner, repo } = github.context.repo;
-        // Determine branch name (from pull_request payload if available)
-        const branchName = github.context.payload.pull_request
-            ? github.context.payload.pull_request.head.ref
-            : github.context.ref.replace("refs/heads/", "");
-        console.log(`📌 Current branch: ${branchName}`);
-        // Fetch open PRs with this branch as head
-        const { data: pullRequests } = await octokit.rest.pulls.list({
-            owner,
-            repo,
-            head: `${owner}:${branchName}`,
-            state: "open",
+        const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
+        const response = await axios_1.default.post(url, postData, {
+            headers: { "Content-Type": "application/json" },
+            httpsAgent: agent,
+            timeout: 20 * 60 * 1000,
+            signal: controller.signal,
         });
-        if (pullRequests.length === 0) {
-            console.log("⚠️ No open PR found for this branch. Skipping comment.");
+        clearTimeout(timeout);
+        clearInterval(heartbeat);
+        spinner.succeed('✅ API response received.');
+        batch_id = response.data.batchTestId;
+        if (!batch_id) {
+            throw new Error("No batchTestId returned in the response.");
         }
-        // Retrieve inputs from action.yml
-        const vla_endpoint = core.getInput("vla_endpoint");
-        const vla_credentials = core.getInput("vla_credentials");
-        const test_name = core.getInput("test_name");
-        const project_id = core.getInput("project_id");
-        const model_name = core.getInput("model_name");
-        const scenario_id = core.getInput("scenario_id");
-        const user_id = core.getInput("user_id");
-        const type = core.getInput("type");
-        console.log(`🔄 Sending API request to: ${vla_endpoint}`);
-        // Abort the request after 10 min
-        const controller = new node_abort_controller_1.AbortController();
-        const timeout = setTimeout(() => {
-            controller.abort();
-        }, 10 * 60 * 1000); // Set timeout for 10 minutes
-        const spinner = (0, ora_1.default)('Waiting for API response...').start();
-        // Start a heartbeat that logs every minute while waiting
-        const agent = new https_1.default.Agent({ keepAlive: true });
-        const heartbeatInterval = setInterval(() => {
-            console.log("⏱️ Still waiting for API response...");
-        }, 60000); // Log every 60 seconds
-        let response;
-        const attempts = 1; // 1 attempt by default
-        try {
-            const postData = {
-                test_name,
-                vla_endpoint,
-                vla_credentials,
-                model_id: "0b6c4a15-bb8d-4092-82b0-f357b77c59fd",
-                model_name,
-                scenario_id,
-                user_id,
-                project_id,
-                attempts,
-                type
-            };
-            console.log('--------- postData payload --------');
-            console.log(postData);
-            const url = "https://europe-west1-norma-dev.cloudfunctions.net/ingest_event";
-            // Make the API POST request
-            response = await axios_1.default.post(url, postData, {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                httpsAgent: agent,
-                timeout: 20 * 60 * 1000,
-                signal: controller.signal,
-            });
-            clearTimeout(timeout);
-            clearInterval(heartbeatInterval);
-            console.log('---------- RESPONSE ---------');
-            console.log(response.data);
-            if (response.status < 200 || response.status >= 300) {
-                core.setFailed(`❌ API request failed with status ${response.status}: ${response.statusText}`);
-                spinner.fail(`API request failed with status ${response.status}`);
-                return;
-            }
-            spinner.succeed('API response received.');
-        }
-        catch (error) {
-            clearTimeout(timeout);
-            clearInterval(heartbeatInterval);
-            spinner.fail(`Action failed: ${error.message}`);
-            core.setFailed(`❌ API request failed: ${error.message}`);
-            return;
-        }
-        const apiResponse = response.data;
-        (0, core_1.startGroup)('API Response');
-        console.log("✅ API Response Received:", apiResponse);
+        (0, core_1.startGroup)('✅ API Response');
+        console.log(response.data);
         (0, core_1.endGroup)();
-        // Use the current commit SHA as the commit identifier
-        const commit = process.env.GITHUB_SHA || 'N/A';
-        // Call the function to post or update the PR comment
-        await (0, postChannelSuccessComment_1.postChannelSuccessComment)(octokit, github.context, commit, vla_endpoint, type, test_name);
-        const batch_id = apiResponse.batchTestId; // Retrieve the batchId built during the pub/sub run
-        console.log("batchID from ingest event:", batch_id);
-        await (0, getResultsComment_1.getResultsComment)(octokit, github.context, user_id, project_id, batch_id);
     }
     catch (error) {
-        console.error(`❌ Error : ${error}`);
-        core.setFailed(`❌ Action failed: ${error.message}`);
+        clearTimeout(timeout);
+        clearInterval(heartbeat);
+        spinner.fail(`❌ API failed: ${error.message}`);
+        (0, core_1.setFailed)(`❌ API request failed: ${error.message}`);
+        throw error;
     }
+    // PR Comment
+    (0, core_1.startGroup)('Posting comment to PR');
+    try {
+        const commentMarker = '<!-- norma-eval-post-comment -->';
+        const commentBody = `${commentMarker}
+### 🚀 Evaluation ongoing
+- **Test Name:** \`${test_name}\`
+- **API Endpoint:** \`${vla_endpoint}\`
+- **Type:** \`${type}\`
+
+<sub>🛠️ If you need to make changes, update your branch and rerun the workflow.</sub>
+`;
+        const { owner, repo } = context.repo;
+        let prNumber;
+        if ((_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number) {
+            prNumber = context.payload.pull_request.number;
+        }
+        else {
+            const branchName = context.ref.replace('refs/heads/', '');
+            const { data: pullRequests } = await github.rest.pulls.list({
+                owner,
+                repo,
+                head: `${owner}:${branchName}`,
+                state: 'open'
+            });
+            prNumber = (_b = pullRequests[0]) === null || _b === void 0 ? void 0 : _b.number;
+        }
+        if (!prNumber) {
+            console.log('⚠️ No PR found. Skipping comment.');
+            return {
+                batch_id,
+                user_id,
+                project_id
+            };
+        }
+        const { data: comments } = await github.rest.issues.listComments({
+            owner,
+            repo,
+            issue_number: prNumber
+        });
+        const existing = comments.find(c => { var _a; return (_a = c.body) === null || _a === void 0 ? void 0 : _a.includes(commentMarker); });
+        if (existing) {
+            await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body: commentBody
+            });
+            (0, core_1.info)(`✅ Updated comment on PR #${prNumber}`);
+        }
+        else {
+            await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: commentBody
+            });
+            (0, core_1.info)(`✅ Created new comment on PR #${prNumber}`);
+        }
+    }
+    catch (e) {
+        (0, core_1.setFailed)(`❌ Failed to post comment: ${e.message}`);
+    }
+    finally {
+        (0, core_1.endGroup)();
+    }
+    return {
+        batch_id,
+        user_id,
+        project_id
+    };
 }
+exports.runPostComment = runPostComment;
+
+
+/***/ }),
+
+/***/ 3704:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 function convertJsonToMarkdownTable(scenarios, results) {
     if (!Array.isArray(scenarios)) {
         return '❌ No scenario data available.';
@@ -36389,10 +36457,12 @@ function convertJsonToMarkdownTable(scenarios, results) {
         'Ionos scenario average score',
         'Metadata scenario average score',
     ];
-    function scoreToEmoji(score) {
+    function scoreToEmoji(score, scale = 'llm') {
         if (score == null)
             return "⬜";
-        const percent = score * 20;
+        const percent = scale === 'llm'
+            ? (score / 3) * 100
+            : score * 33.333;
         if (percent < 30)
             return "🟥";
         if (percent <= 70)
@@ -36406,12 +36476,24 @@ function convertJsonToMarkdownTable(scenarios, results) {
         const scenarioAverageScore = scenario.averageScores || {};
         rows.push([
             scenarioName,
-            globalAverageScore.openai != null ? `${scoreToEmoji(globalAverageScore.openai)} ${(globalAverageScore.openai * 20).toFixed(2)}%` : '⬜',
-            globalAverageScore.ionos != null ? `${scoreToEmoji(globalAverageScore.ionos)} ${(globalAverageScore.ionos * 20).toFixed(2)}%` : '⬜',
-            globalAverageScore.metadata != null ? `${scoreToEmoji(globalAverageScore.metadata)} ${(globalAverageScore.metadata * 20).toFixed(2)}%` : '⬜',
-            scenarioAverageScore.openai != null ? `${scoreToEmoji(scenarioAverageScore.openai)} ${(scenarioAverageScore.openai * 20).toFixed(2)}%` : '⬜',
-            scenarioAverageScore.ionos != null ? `${scoreToEmoji(scenarioAverageScore.ionos)} ${(scenarioAverageScore.ionos * 20).toFixed(2)}%` : '⬜',
-            scenarioAverageScore.metadata != null ? `${scoreToEmoji(scenarioAverageScore.metadata)} ${(scenarioAverageScore.metadata * 20).toFixed(2)}%` : '⬜',
+            globalAverageScore.openai != null
+                ? `${scoreToEmoji(globalAverageScore.openai, 'llm')} ${Math.round((globalAverageScore.openai / 3) * 100)}%`
+                : '⬜',
+            globalAverageScore.ionos != null
+                ? `${scoreToEmoji(globalAverageScore.ionos, 'llm')} ${Math.round((globalAverageScore.ionos / 3) * 100)}%`
+                : '⬜',
+            globalAverageScore.metadata != null
+                ? `${scoreToEmoji(globalAverageScore.metadata, 'metadata')} ${(globalAverageScore.metadata * 33.333).toFixed(0)}%`
+                : '⬜',
+            scenarioAverageScore.openai != null
+                ? `${scoreToEmoji(scenarioAverageScore.openai, 'llm')} ${Math.round((scenarioAverageScore.openai / 3) * 100)}%`
+                : '⬜',
+            scenarioAverageScore.ionos != null
+                ? `${scoreToEmoji(scenarioAverageScore.ionos, 'llm')} ${Math.round((scenarioAverageScore.ionos / 3) * 100)}%`
+                : '⬜',
+            scenarioAverageScore.metadata != null
+                ? `${scoreToEmoji(scenarioAverageScore.metadata, 'metadata')} ${(scenarioAverageScore.metadata * 33.333).toFixed(0)}%`
+                : '⬜',
         ]);
     });
     // Build the markdown array in the PR
@@ -36422,216 +36504,7 @@ function convertJsonToMarkdownTable(scenarios, results) {
     ].join('\n');
     return `### Result table\n${markdown}`;
 }
-exports.convertJsonToMarkdownTable = convertJsonToMarkdownTable;
-function formatTableForConsole(jsonData) {
-    if (!Array.isArray(jsonData) || jsonData.length === 0) {
-        console.warn("⚠️ formatTableForConsole: No valid results to format:", jsonData);
-        return "No results to display.";
-    }
-    const headers = ["Attempt", "Conversation ID", "User Message", "Expected Response", "New Conv Outbound Metadata", "New Conv Evaluation (GPT-4)", "New Conv Evaluation (Mistral)", "Metadata Extraction score"];
-    const columnWidths = headers.map((header, i) => Math.max(header.length, ...jsonData.map(row => (row[headers[i]] ? row[headers[i]].toString().length : 0))));
-    let table = headers.map((header, i) => header.padEnd(columnWidths[i])).join(" | ") + "\n";
-    table += columnWidths.map(width => "-".repeat(width)).join("-|-") + "\n";
-    jsonData.forEach(row => {
-        table += headers.map((header, i) => (row[header] ? row[header].toString().padEnd(columnWidths[i]) : "-".padEnd(columnWidths[i]))).join(" | ") + "\n";
-    });
-    return table;
-}
-run();
-
-
-/***/ }),
-
-/***/ 3278:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.postChannelComment = exports.postChannelSuccessComment = void 0;
-const core_1 = __nccwpck_require__(7484);
-/**
- * Posts or updates a comment on a pull request with the evaluation report.
- * Make sure your workflow YAML grants the GITHUB_TOKEN proper permissions:
- *
- * permissions:
- *   contents: read
- *   pull-requests: write
- *   issues: write
- *
- * @param github - An instance of Octokit authenticated with GITHUB_TOKEN.
- * @param context - The GitHub Actions context.
- * @param result - The evaluation result string.
- * @param commit - The commit SHA or identifier.
- */
-async function postChannelSuccessComment(github, context, commit, api_host, type, test_name) {
-    (0, core_1.startGroup)('Commenting on PR');
-    try {
-        const commentMarker = '<!-- norma-eval-post-comment -->';
-        const commentBody = `${commentMarker}
-### 🚀 Automatic Evaluation Report
-- **API Host:** \`${api_host}\`
-- **Type:** \`${type}\`
-- **Test Name:** \`${test_name}\`
-
-<sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
-`;
-        const { owner, repo } = context.repo;
-        let prNumber;
-        // Use the PR number from the payload if available
-        if (context.payload.pull_request && context.payload.pull_request.number) {
-            prNumber = context.payload.pull_request.number;
-            console.log(`Pull request found in payload: #${prNumber}`);
-        }
-        else {
-            // For push events, derive branch name from context.ref
-            const branchName = context.ref.replace('refs/heads/', '');
-            // Find open PRs with the current branch as head
-            const { data: pullRequests } = await github.rest.pulls.list({
-                owner,
-                repo,
-                head: `${owner}:${branchName}`,
-                state: 'open'
-            });
-            if (pullRequests.length === 0) {
-                console.log('⚠️ No open PR found for this branch. Skipping comment.');
-                return;
-            }
-            prNumber = pullRequests[0].number;
-            console.log(`Found open PR #${prNumber} for branch ${branchName}`);
-        }
-        if (!prNumber) {
-            console.log('⚠️ No PR number determined. Exiting.');
-            return;
-        }
-        // Retrieve existing comments on the PR
-        const { data: existingComments } = await github.rest.issues.listComments({
-            owner,
-            repo,
-            issue_number: prNumber
-        });
-        // Look for an existing comment with the marker
-        const existingComment = existingComments.find((c) => c.body && c.body.includes(commentMarker));
-        if (existingComment) {
-            // Update the existing comment
-            await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existingComment.id,
-                body: commentBody
-            });
-            (0, core_1.info)(`✅ Updated existing comment in PR #${prNumber}`);
-        }
-        else {
-            // Create a new comment if no matching comment was found
-            await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: prNumber,
-                body: commentBody
-            });
-            (0, core_1.info)(`✅ Created new comment in PR #${prNumber}`);
-        }
-    }
-    catch (e) {
-        (0, core_1.error)(`Error posting/updating comment: ${e.message}`);
-    }
-    finally {
-        (0, core_1.endGroup)();
-    }
-}
-exports.postChannelSuccessComment = postChannelSuccessComment;
-/**
- * Posts or updates a comment on a pull request with the evaluation report.
- * Make sure your workflow YAML grants the GITHUB_TOKEN proper permissions:
- *
- * permissions:
- *   contents: read
- *   pull-requests: write
- *   issues: write
- *
- * @param github - An instance of Octokit authenticated with GITHUB_TOKEN.
- * @param context - The GitHub Actions context.
- * @param result - The evaluation result string.
- * @param commit - The commit SHA or identifier.
- */
-async function postChannelComment(github, context, vla_endpoint, type, test_name) {
-    (0, core_1.startGroup)('Commenting on PR');
-    try {
-        const commentMarker = '<!-- norma-eval-post-comment -->';
-        const commentBody = `${commentMarker}
-### 🚀 Automatic Evaluation Report
-- **API Host:** \`${vla_endpoint}\`
-- **Type:** \`${type}\`
-- **Test Name:** \`${test_name}\`
-
-<sub>🔍 If you need to make changes, update your branch and rerun the workflow.</sub>
-`;
-        const { owner, repo } = context.repo;
-        let prNumber;
-        // Use the PR number from the payload if available
-        if (context.payload.pull_request && context.payload.pull_request.number) {
-            prNumber = context.payload.pull_request.number;
-            console.log(`Pull request found in payload: #${prNumber}`);
-        }
-        else {
-            // For push events, derive branch name from context.ref
-            const branchName = context.ref.replace('refs/heads/', '');
-            // Find open PRs with the current branch as head
-            const { data: pullRequests } = await github.rest.pulls.list({
-                owner,
-                repo,
-                head: `${owner}:${branchName}`,
-                state: 'open'
-            });
-            if (pullRequests.length === 0) {
-                console.log('⚠️ No open PR found for this branch. Skipping comment.');
-                return;
-            }
-            prNumber = pullRequests[0].number;
-            console.log(`Found open PR #${prNumber} for branch ${branchName}`);
-        }
-        if (!prNumber) {
-            console.log('⚠️ No PR number determined. Exiting.');
-            return;
-        }
-        // Retrieve existing comments on the PR
-        const { data: existingComments } = await github.rest.issues.listComments({
-            owner,
-            repo,
-            issue_number: prNumber
-        });
-        // Look for an existing comment with the marker
-        const existingComment = existingComments.find((c) => c.body && c.body.includes(commentMarker));
-        if (existingComment) {
-            // Update the existing comment
-            await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existingComment.id,
-                body: commentBody
-            });
-            (0, core_1.info)(`✅ Updated existing comment in PR #${prNumber}`);
-        }
-        else {
-            // Create a new comment if no matching comment was found
-            await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: prNumber,
-                body: commentBody
-            });
-            (0, core_1.info)(`✅ Created new comment in PR #${prNumber}`);
-        }
-    }
-    catch (e) {
-        (0, core_1.error)(`Error posting/updating comment: ${e.message}`);
-    }
-    finally {
-        (0, core_1.endGroup)();
-    }
-}
-exports.postChannelComment = postChannelComment;
+exports["default"] = convertJsonToMarkdownTable;
 
 
 /***/ }),

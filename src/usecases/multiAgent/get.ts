@@ -1,11 +1,27 @@
 import { endGroup, startGroup, info, setFailed } from '@actions/core';
+import convertJsonToMarkdownTable from '../../utils/markdown';
 import type { GitHub } from '@actions/github/lib/utils';
 import { Context } from '@actions/github/lib/context';
 import axios from 'axios';
-import { convertJsonToMarkdownTable } from '.';
-import { stat } from 'fs';
 
-export async function getResultsComment(
+/**
+ * Code that runs after the POST request that starts a model evaluation.
+ * It does the following:
+ *   1. Waits for the evaluation batch to finish (by polling a GET endpoint),
+ *   2. Retrieves the evaluation results from the backend,
+ *   3. Converts the results to a Markdown table,
+ *   4. Creates or updates a comment with the results on the related Pull Request.
+ *
+ * It uses the user ID, project ID, and batch ID from the POST response.
+ * @param github 
+ * @param context 
+ * @param user_id - Corresponds to the user identifier
+ * @param project_id - Corresponds to the project identifier
+ * @param batch_id - Batch id retrieved during the previous POST call
+ * @returns 
+ */
+
+export async function runGetComment(
   github: InstanceType<typeof GitHub>,
   context: Context,
   user_id: string,
@@ -14,18 +30,17 @@ export async function getResultsComment(
 ): Promise<void> {
   startGroup('⏳ Waiting for batch to complete...');
 
+  console.log("Received payload used to fetch results (user_id, project_id, batch_id):", user_id, project_id, batch_id)
   const baseUrl = 'https://evap-app-api-service-dev-966286810479.europe-west1.run.app';
   const url = `${baseUrl}/fetch_results/${user_id}/${project_id}/${batch_id}`;
 
   const delayMs = 120_000; // 2 minutes
-//  const wait = 180_000; // Wait 3 minutes
   const maxAttempts = 30;
   let attempt = 0;
   let response;
   let status = '';
   let markdownResults = '';
 
-//  await new Promise(res => setTimeout(res, wait));
 
   while (attempt < maxAttempts) {
     try {
@@ -34,7 +49,6 @@ export async function getResultsComment(
       });
 
       status = response.data?.status || '';
-      console.log('------ Status------:', status)
       console.log(`🔍 Attempt ${attempt + 1}: batch status = "${status}"`);
 
       if (status === 'Complete') {

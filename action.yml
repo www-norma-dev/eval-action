@@ -6,7 +6,10 @@ inputs:
     required: false
   vla_endpoint:
     description: "VLA Endpoint"
-    required: true
+    required: false
+  api_host:
+    description: "API Host (alternative to vla_endpoint)"
+    required: false
   vla_credentials:
     description: "VLA Credentials"
     required: true
@@ -32,7 +35,7 @@ inputs:
     description: "Batch ID"
     required: true
   type:
-    description: "MultiAgent or extractor"
+    description: "MultiAgent"
     required: true
 
     
