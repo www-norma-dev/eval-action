@@ -36457,10 +36457,12 @@ function convertJsonToMarkdownTable(scenarios, results) {
         'Ionos scenario average score',
         'Metadata scenario average score',
     ];
-    function scoreToEmoji(score) {
+    function scoreToEmoji(score, scale = 'llm') {
         if (score == null)
             return "⬜";
-        const percent = score * 20;
+        const percent = scale === 'llm'
+            ? (score / 3) * 100
+            : score * 33.333;
         if (percent < 30)
             return "🟥";
         if (percent <= 70)
@@ -36474,12 +36476,24 @@ function convertJsonToMarkdownTable(scenarios, results) {
         const scenarioAverageScore = scenario.averageScores || {};
         rows.push([
             scenarioName,
-            globalAverageScore.openai != null ? `${scoreToEmoji(globalAverageScore.openai)} ${(globalAverageScore.openai * 20).toFixed(2)}%` : '⬜',
-            globalAverageScore.ionos != null ? `${scoreToEmoji(globalAverageScore.ionos)} ${(globalAverageScore.ionos * 20).toFixed(2)}%` : '⬜',
-            globalAverageScore.metadata != null ? `${scoreToEmoji(globalAverageScore.metadata)} ${(globalAverageScore.metadata * 20).toFixed(2)}%` : '⬜',
-            scenarioAverageScore.openai != null ? `${scoreToEmoji(scenarioAverageScore.openai)} ${(scenarioAverageScore.openai * 20).toFixed(2)}%` : '⬜',
-            scenarioAverageScore.ionos != null ? `${scoreToEmoji(scenarioAverageScore.ionos)} ${(scenarioAverageScore.ionos * 20).toFixed(2)}%` : '⬜',
-            scenarioAverageScore.metadata != null ? `${scoreToEmoji(scenarioAverageScore.metadata)} ${(scenarioAverageScore.metadata * 20).toFixed(2)}%` : '⬜',
+            globalAverageScore.openai != null
+                ? `${scoreToEmoji(globalAverageScore.openai, 'llm')} ${Math.round((globalAverageScore.openai / 3) * 100)}%`
+                : '⬜',
+            globalAverageScore.ionos != null
+                ? `${scoreToEmoji(globalAverageScore.ionos, 'llm')} ${Math.round((globalAverageScore.ionos / 3) * 100)}%`
+                : '⬜',
+            globalAverageScore.metadata != null
+                ? `${scoreToEmoji(globalAverageScore.metadata, 'metadata')} ${(globalAverageScore.metadata * 33.333).toFixed(0)}%`
+                : '⬜',
+            scenarioAverageScore.openai != null
+                ? `${scoreToEmoji(scenarioAverageScore.openai, 'llm')} ${Math.round((scenarioAverageScore.openai / 3) * 100)}%`
+                : '⬜',
+            scenarioAverageScore.ionos != null
+                ? `${scoreToEmoji(scenarioAverageScore.ionos, 'llm')} ${Math.round((scenarioAverageScore.ionos / 3) * 100)}%`
+                : '⬜',
+            scenarioAverageScore.metadata != null
+                ? `${scoreToEmoji(scenarioAverageScore.metadata, 'metadata')} ${(scenarioAverageScore.metadata * 33.333).toFixed(0)}%`
+                : '⬜',
         ]);
     });
     // Build the markdown array in the PR
