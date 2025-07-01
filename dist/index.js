@@ -36176,7 +36176,7 @@ async function runGetComment(github, context, user_id, project_id, batch_id) {
     // PR comment
     try {
         let globalAverageScore;
-        globalAverageScore = results || {};
+        globalAverageScore = results.averageScores || {};
         console.log("Global average scores:", globalAverageScore);
         const dashboardUrl = response.data.url;
         console.log("--- Dashboard url:", dashboardUrl);
@@ -36198,7 +36198,7 @@ async function runGetComment(github, context, user_id, project_id, batch_id) {
             ? `${(globalAverageScore.metadata * 33.333).toFixed(0)}%`
             : 'N/A'}
 
-    
+
 🔗 [View results in dashboard](${dashboardUrl})
 
 ${markdownResults}

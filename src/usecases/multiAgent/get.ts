@@ -104,7 +104,7 @@ export async function runGetComment(
   // PR comment
   try {
     let globalAverageScore: any;
-    globalAverageScore = results || {};
+    globalAverageScore = results.averageScores || {};
     console.log("Global average scores:", globalAverageScore)
     const dashboardUrl = response.data.url;
     console.log("--- Dashboard url:", dashboardUrl);
@@ -126,7 +126,7 @@ export async function runGetComment(
     ? `${(globalAverageScore.metadata * 33.333).toFixed(0)}%`
     : 'N/A'}
 
-    
+
 🔗 [View results in dashboard](${dashboardUrl})
 
 ${markdownResults}
