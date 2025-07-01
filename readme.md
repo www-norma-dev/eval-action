@@ -19,6 +19,7 @@ It helps teams automatically test API endpoints and visualize evaluation results
 - get.js: sends a request to fetch evaluation results API with a GET method, then creates or updates another PR comment.
 - utils.js: contains a function for formatting data into a table with scores and color indicator.
 - action.yml: specifies the inputs required by eval-action and makes them available when the action is invoked in a GitHub Actions workflow.
+- markdown.ts: builds a table with scenario scores results.
 
 ## How to call eval-action
 

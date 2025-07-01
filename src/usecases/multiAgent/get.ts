@@ -40,7 +40,7 @@ export async function runGetComment(
   let response;
   let status = '';
   let markdownResults = '';
-
+  let results: any;
 
   while (attempt < maxAttempts) {
     try {
@@ -69,7 +69,7 @@ export async function runGetComment(
   }
 
   try {
-    // Retrieve scenario 
+    // Retrieve results for each scenario
     if (!response || !response.data?.results?.scenarios) {
       setFailed('No scenarios found in the results.');
       return;
@@ -80,21 +80,22 @@ export async function runGetComment(
       return;
     }
 
-    // Retrieve global result
+    // Retrieve batch global result
     if (!response || !response.data?.results) {
       setFailed('No average scores found in the results.');
       return;
     }
-    const results = response.data?.results;
+
+    results = response.data?.results;
     if (!results || results.length === 0) {
       setFailed('No average scores found in the results.');
       return;
     }
 
     markdownResults = convertJsonToMarkdownTable(
-      scenarios,
-      results
+      scenarios
     );
+
   } catch (err: any) {
     setFailed(`❌ Error processing results: ${err.message}`);
     return;
@@ -102,15 +103,30 @@ export async function runGetComment(
 
   // PR comment
   try {
+    let globalAverageScore: any;
+    globalAverageScore = results || {};
+    console.log("Global average scores:", globalAverageScore)
     const dashboardUrl = response.data.url;
     console.log("--- Dashboard url:", dashboardUrl);
     const commentMarker = '<!-- norma-eval-get-comment -->';
     const commentBody = `${commentMarker}
+
 ### ✅ Fetched evaluation results
 - **User ID:** \`${user_id}\`
 - **Project ID:** \`${project_id}\`
 - **Batch ID:** \`${batch_id}\`
 
+- **GPT global average score:** ${globalAverageScore.openai != null
+  ? `${Math.round((globalAverageScore.openai / 3) * 100)}%`
+  : 'N/A'}
+- **Ionos global average score:** ${globalAverageScore.ionos != null
+    ? `${Math.round((globalAverageScore.ionos / 3) * 100)}%`
+    : 'N/A'}
+- **Metadata global average score:** ${globalAverageScore.metadata != null
+    ? `${(globalAverageScore.metadata * 33.333).toFixed(0)}%`
+    : 'N/A'}
+
+    
 🔗 [View results in dashboard](${dashboardUrl})
 
 ${markdownResults}
