@@ -36123,6 +36123,7 @@ async function runGetComment(github, context, user_id, project_id, batch_id) {
     let response;
     let status = '';
     let markdownResults = '';
+    let results;
     while (attempt < maxAttempts) {
         try {
             response = await axios_1.default.get(url, {
@@ -36146,7 +36147,7 @@ async function runGetComment(github, context, user_id, project_id, batch_id) {
         return;
     }
     try {
-        // Retrieve scenario 
+        // Retrieve results for each scenario
         if (!response || !((_d = (_c = response.data) === null || _c === void 0 ? void 0 : _c.results) === null || _d === void 0 ? void 0 : _d.scenarios)) {
             (0, core_1.setFailed)('No scenarios found in the results.');
             return;
@@ -36156,17 +36157,17 @@ async function runGetComment(github, context, user_id, project_id, batch_id) {
             (0, core_1.setFailed)('No scenarios found in the results.');
             return;
         }
-        // Retrieve global result
+        // Retrieve batch global result
         if (!response || !((_g = response.data) === null || _g === void 0 ? void 0 : _g.results)) {
             (0, core_1.setFailed)('No average scores found in the results.');
             return;
         }
-        const results = (_h = response.data) === null || _h === void 0 ? void 0 : _h.results;
+        results = (_h = response.data) === null || _h === void 0 ? void 0 : _h.results;
         if (!results || results.length === 0) {
             (0, core_1.setFailed)('No average scores found in the results.');
             return;
         }
-        markdownResults = (0, markdown_1.default)(scenarios, results);
+        markdownResults = (0, markdown_1.default)(scenarios);
     }
     catch (err) {
         (0, core_1.setFailed)(`❌ Error processing results: ${err.message}`);
@@ -36174,14 +36175,29 @@ async function runGetComment(github, context, user_id, project_id, batch_id) {
     }
     // PR comment
     try {
+        let globalAverageScore;
+        globalAverageScore = results.averageScores || {};
+        console.log("Global average scores:", globalAverageScore);
         const dashboardUrl = response.data.url;
         console.log("--- Dashboard url:", dashboardUrl);
         const commentMarker = '<!-- norma-eval-get-comment -->';
         const commentBody = `${commentMarker}
+
 ### ✅ Fetched evaluation results
 - **User ID:** \`${user_id}\`
 - **Project ID:** \`${project_id}\`
 - **Batch ID:** \`${batch_id}\`
+
+- **GPT global average score:** ${globalAverageScore.openai != null
+            ? `${Math.round((globalAverageScore.openai / 3) * 100)}%`
+            : 'N/A'}
+- **Ionos global average score:** ${globalAverageScore.ionos != null
+            ? `${Math.round((globalAverageScore.ionos / 3) * 100)}%`
+            : 'N/A'}
+- **Metadata global average score:** ${globalAverageScore.metadata != null
+            ? `${(globalAverageScore.metadata * 33.333).toFixed(0)}%`
+            : 'N/A'}
+
 
 🔗 [View results in dashboard](${dashboardUrl})
 
@@ -36443,16 +36459,18 @@ exports.runPostComment = runPostComment;
 
 "use strict";
 
+/**
+ * This code enables users to see average scores per scenario.
+ * @param scenarios
+ * @returns a markdown table
+ */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-function convertJsonToMarkdownTable(scenarios, results) {
+function convertJsonToMarkdownTable(scenarios) {
     if (!Array.isArray(scenarios)) {
         return '❌ No scenario data available.';
     }
     const headers = [
-        'Scenario',
-        'GPT global average score',
-        'Ionos global average score',
-        'Metadata global average score',
+        'Scenario name',
         'GPT scenario average score',
         'Ionos scenario average score',
         'Metadata scenario average score',
@@ -36472,19 +36490,9 @@ function convertJsonToMarkdownTable(scenarios, results) {
     const rows = [];
     scenarios.forEach((scenario) => {
         const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
-        const globalAverageScore = results.averageScores || {};
         const scenarioAverageScore = scenario.averageScores || {};
         rows.push([
             scenarioName,
-            globalAverageScore.openai != null
-                ? `${scoreToEmoji(globalAverageScore.openai, 'llm')} ${Math.round((globalAverageScore.openai / 3) * 100)}%`
-                : '⬜',
-            globalAverageScore.ionos != null
-                ? `${scoreToEmoji(globalAverageScore.ionos, 'llm')} ${Math.round((globalAverageScore.ionos / 3) * 100)}%`
-                : '⬜',
-            globalAverageScore.metadata != null
-                ? `${scoreToEmoji(globalAverageScore.metadata, 'metadata')} ${(globalAverageScore.metadata * 33.333).toFixed(0)}%`
-                : '⬜',
             scenarioAverageScore.openai != null
                 ? `${scoreToEmoji(scenarioAverageScore.openai, 'llm')} ${Math.round((scenarioAverageScore.openai / 3) * 100)}%`
                 : '⬜',

@@ -1,21 +1,17 @@
+/**
+ * This code enables users to see average scores per scenario.
+ * @param scenarios 
+ * @returns a markdown table 
+ */
+
 export default function convertJsonToMarkdownTable(
     scenarios: any[],
-    results: {
-      averageScores?: {
-        openai?: number,
-        ionos?: number,
-        metadata?: number
-      }
-    }
   ): string {
     if (!Array.isArray(scenarios)) {
       return '❌ No scenario data available.';
     }
     const headers = [
-      'Scenario',
-      'GPT global average score',
-      'Ionos global average score',
-      'Metadata global average score',
+      'Scenario name',
       'GPT scenario average score',
       'Ionos scenario average score',
       'Metadata scenario average score',
@@ -38,23 +34,10 @@ export default function convertJsonToMarkdownTable(
   
     scenarios.forEach((scenario) => {
       const scenarioName = scenario.scenarioName || scenario.name || 'Unnamed Scenario';
-      const globalAverageScore = results.averageScores || {};
       const scenarioAverageScore = scenario.averageScores || {};
   
       rows.push([
         scenarioName,
-        globalAverageScore.openai != null
-          ? `${scoreToEmoji(globalAverageScore.openai, 'llm')} ${Math.round((globalAverageScore.openai / 3) * 100)}%`
-          : '⬜',
-      
-        globalAverageScore.ionos != null
-          ? `${scoreToEmoji(globalAverageScore.ionos, 'llm')} ${Math.round((globalAverageScore.ionos / 3) * 100)}%`
-          : '⬜',
-      
-        globalAverageScore.metadata != null
-          ? `${scoreToEmoji(globalAverageScore.metadata, 'metadata')} ${(globalAverageScore.metadata * 33.333).toFixed(0)}%`
-          : '⬜',
-      
         scenarioAverageScore.openai != null
           ? `${scoreToEmoji(scenarioAverageScore.openai, 'llm')} ${Math.round((scenarioAverageScore.openai / 3) * 100)}%`
           : '⬜',
