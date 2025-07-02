@@ -36042,35 +36042,50 @@ const core = __importStar(__nccwpck_require__(7484));
 */
 async function run() {
     try {
+        const isGitLab = !!process.env.GITLAB_CI;
         const token = process.env.GITHUB_TOKEN || core.getInput("repoToken");
-        if (!token) {
+        if (!token && !isGitLab) {
             core.setFailed("❌ GITHUB_TOKEN is not set.");
             return;
         }
-        // Github configuration
-        const octokit = github.getOctokit(token);
-        const { owner, repo } = github.context.repo;
-        // Determine branch name (from pull_request payload if available)
-        const branchName = github.context.payload.pull_request
-            ? github.context.payload.pull_request.head.ref
-            : github.context.ref.replace("refs/heads/", "");
-        console.log(`📌 Current branch: ${branchName}`);
-        // Fetch open PRs with this branch as head
-        const { data: pullRequests } = await octokit.rest.pulls.list({
-            owner,
-            repo,
-            head: `${owner}:${branchName}`,
-            state: "open",
-        });
-        if (pullRequests.length === 0) {
-            console.log("⚠️ No open PR found for this branch. Skipping comment.");
+        let user_id, project_id, batch_id;
+        if (isGitLab) {
+            console.log("Running from GitLab");
+            let fakeContext = {};
+            const commit = process.env.CI_COMMIT_SHA || "N/A";
+            fakeContext = { repo: {}, payload: {} };
+            const fakeOctokit = {};
+            const res = await (0, post_1.runPostComment)(fakeOctokit, fakeContext, commit);
+            batch_id = res.batch_id;
+            user_id = res.user_id;
+            project_id = res.project_id;
+            await (0, get_1.runGetComment)(fakeOctokit, fakeContext, user_id, project_id, batch_id);
         }
-        // Use the current commit SHA as the commit identifier
-        const commit = process.env.GITHUB_SHA || 'N/A';
-        // Call the function to run a batch and comment on the PR
-        const { batch_id, user_id, project_id } = await (0, post_1.runPostComment)(octokit, github.context, commit);
-        // Call the function to fetch results and comment on the PR
-        await (0, get_1.runGetComment)(octokit, github.context, user_id, project_id, batch_id);
+        else {
+            // GitHub mode
+            console.log("Running from GitHub");
+            const octokit = github.getOctokit(token);
+            const { owner, repo } = github.context.repo;
+            const branchName = github.context.payload.pull_request
+                ? github.context.payload.pull_request.head.ref
+                : github.context.ref.replace("refs/heads/", "");
+            console.log(`📌 Current branch: ${branchName}`);
+            const { data: pullRequests } = await octokit.rest.pulls.list({
+                owner,
+                repo,
+                head: `${owner}:${branchName}`,
+                state: "open",
+            });
+            if (pullRequests.length === 0) {
+                console.log("⚠️ No open PR found for this branch. Skipping comment.");
+            }
+            const commit = process.env.GITHUB_SHA || 'N/A';
+            const res = await (0, post_1.runPostComment)(octokit, github.context, commit);
+            batch_id = res.batch_id;
+            user_id = res.user_id;
+            project_id = res.project_id;
+            await (0, get_1.runGetComment)(octokit, github.context, user_id, project_id, batch_id);
+        }
     }
     catch (error) {
         console.error(`❌ Error : ${error}`);
